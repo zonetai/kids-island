@@ -25,6 +25,7 @@
       <button class="pill btn icon" onclick="toggleSound()" id="sndBtn" title="音效">🔊</button>
       <button class="pill btn icon" onclick="toggleMusic()" id="musBtn" title="背景音樂">🎵</button>
       <button class="pill btn icon" onclick="toggleFull()" title="全螢幕">⛶</button>
+      <button class="pill btn" onclick="openSync()" id="syncBtn" style="display:none">☁️</button>
     </div>
   </header>
   <main id="app"></main>
@@ -37,7 +38,9 @@
 </div>
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal"></div></div>
 <div class="story" id="story" style="display:none"></div>
+<script src="js/config.js"></script>
 <script src="js/questions.js"></script>
+<script src="js/sync.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
