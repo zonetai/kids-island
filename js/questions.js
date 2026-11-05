@@ -1,5 +1,5 @@
 /* ============================================================
-   知識島大冒險 — 題庫
+   知識島探險隊 — 題庫
    格式：[題目, [正確答案, 錯誤1, 錯誤2, 錯誤3], 解說, 單元標籤]
    正確答案一律放第一個，遊戲執行時會自動打亂。
    ============================================================ */
@@ -18,8 +18,8 @@ const SUBJECTS = {
     story:["歡迎來到字字寶藏屋！我是熊貓書僮。","傳說每個國字裡都藏著一把鑰匙，集滿鑰匙就能打開寶藏大門。","每一關都是一個單元，拿到星星就能往前走。準備好了嗎？"]},
   math:{emo:"🔢", name:"數學", world:"數字火箭站", npc:"🤖", npcName:"算算機器人", color:"#2a9d8f", bg:"linear-gradient(160deg,#e0fbfc,#c2f0ef)",
     story:["嗶嗶！我是算算機器人，數字火箭站的管理員。","火箭要起飛，需要正確的數字當燃料！","每答對一題，火箭就往太空前進一步。出發！"]},
-  english:{emo:"🔤", name:"英語", world:"ABC 港口", npc:"🦜", npcName:"鸚鵡 Polly", color:"#3a86ff", bg:"linear-gradient(160deg,#e7f0ff,#cfe0ff)",
-    story:["Hello! 我是 Polly，ABC 港口最會說話的鸚鵡。","港口的船要出海，但船長聽不懂外國朋友說什麼！","幫我把英文單字和句子都學會，船就能平安出航。"]},
+  english:{emo:"🅰️", name:"英語", world:"ABC 彩虹列車", npc:"🦜", npcName:"鸚鵡 Polly", color:"#3a86ff", bg:"linear-gradient(160deg,#e7f0ff,#cfe0ff)",
+    story:["Hello! 我是 Polly，ABC 彩虹列車的小小列車長。","列車每到一站都會停下來，站牌上寫的都是英文字！","認得字母、單字和句子，列車才能一站一站開到終點。All aboard!"]},
   life:{emo:"🌈", name:"生活", world:"好奇心草原", npc:"🐰", npcName:"兔兔老師", color:"#ff7aa2", bg:"linear-gradient(160deg,#fff0f5,#ffd9e6)",
     story:["哈囉！我是兔兔老師，好奇心草原的導遊。","草原上有好多有趣的事：安全、禮貌、小動物、天氣……","用你的眼睛觀察，用心去想，答案就在生活裡！"]},
   science:{emo:"🔬", name:"自然", world:"奇妙實驗室", npc:"🐸", npcName:"青蛙博士", color:"#2ec4b6", bg:"linear-gradient(160deg,#e6fff9,#c7f5ec)",
