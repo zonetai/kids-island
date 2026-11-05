@@ -1,5 +1,5 @@
 /* ============================================================
-   知識島大冒險 — 遊戲邏輯
+   知識島探險隊 — 遊戲邏輯
    ============================================================ */
 const KEY="kidsIsland_v1";
 const QPER=5, BOSS_N=8, DAILY_GOAL=3, DAILY_REWARD=30, DRAW_COST=20;
@@ -291,7 +291,7 @@ function finish(){
   if(stars>=2){confetti(stars===3?130:60);sfx("win")}else if(stars===1)sfx("ok");
   checkAch();
 }
-function share(r,n,st){const t=`我在「知識島大冒險」${GRADES[Q.g-1].name}${SUBJECTS[Q.s].name}${Q.boss?"魔王城":"第"+(Q.ci+1)+"關"} 答對 ${r}/${n} 題，拿到 ${"⭐".repeat(st)||"☆"}！${location.href.split("#")[0]}`;try{navigator.clipboard.writeText(t).then(()=>toast("已複製成績，貼給爸媽看吧！"),()=>toast(t))}catch(e){toast(t)}}
+function share(r,n,st){const t=`我在「知識島探險隊」${GRADES[Q.g-1].name}${SUBJECTS[Q.s].name}${Q.boss?"魔王城":"第"+(Q.ci+1)+"關"} 答對 ${r}/${n} 題，拿到 ${"⭐".repeat(st)||"☆"}！${location.href.split("#")[0]}`;try{navigator.clipboard.writeText(t).then(()=>toast("已複製成績，貼給爸媽看吧！"),()=>toast(t))}catch(e){toast(t)}}
 
 /* ---------- 自由練習 ---------- */
 let P={g:0,s:"",ci:-1};
