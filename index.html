@@ -7,85 +7,139 @@
 <style>
 :root{
   --bg:#fff8ec; --ink:#3b2f2a; --muted:#8a7a70; --card:#ffffff;
-  --pri:#ff8a3d; --pri-d:#e56f20; --ok:#3bb273; --bad:#e5484d; --line:#f0e2cf;
+  --pri:#ff8a3d; --pri-d:#e56f20; --ok:#3bb273; --bad:#e5484d; --line:#f0e2cf; --boss:#8e5cf6;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif;background:var(--bg);color:var(--ink);
-  background-image:radial-gradient(circle at 10% 10%,#ffe9c7 0,transparent 30%),radial-gradient(circle at 90% 80%,#d8f3ff 0,transparent 35%);min-height:100vh}
-button{font-family:inherit;cursor:pointer}
+  background-image:radial-gradient(circle at 10% 10%,#ffe9c7 0,transparent 30%),radial-gradient(circle at 90% 80%,#d8f3ff 0,transparent 35%);min-height:100vh;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;color:inherit}
 .wrap{max-width:980px;margin:0 auto;padding:16px}
 header.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-bottom:12px}
-.brand{font-weight:900;font-size:20px;display:flex;align-items:center;gap:8px}
-.brand small{font-weight:500;color:var(--muted);font-size:13px}
+.brand{font-weight:900;font-size:20px;display:flex;align-items:center;gap:10px}
+.brand small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.avatar{width:46px;height:46px;border-radius:50%;border:3px solid #ffc861;background:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 #e9b24a;transition:transform .15s;padding:0}
+.avatar:hover{transform:scale(1.08) rotate(-6deg)}
 .stats{display:flex;gap:8px;flex-wrap:wrap}
 .pill{background:#fff;border:2px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:700;font-size:14px}
 .pill.btn{border-color:var(--pri);color:var(--pri-d)}
+.pill.bump{animation:pop .4s}
 h1{font-size:30px;margin:10px 0 4px;text-align:center}
 .sub{text-align:center;color:var(--muted);margin:0 0 20px}
 .grid{display:grid;gap:14px}
 .g3{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
-.card{background:var(--card);border:3px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 4px 0 var(--line);transition:transform .12s}
-.card:hover{transform:translateY(-3px)}
+.card{background:var(--card);border:3px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 4px 0 var(--line);transition:transform .12s,box-shadow .12s}
+.card:hover{transform:translateY(-3px);box-shadow:0 7px 0 var(--line)}
+.rise{animation:rise .45s both}
 .grade-card{text-align:left;width:100%}
-.grade-card .big{font-size:40px}
+.grade-card .big{font-size:44px;display:inline-block;animation:floaty 3s ease-in-out infinite}
 .grade-card h3{margin:6px 0 2px;font-size:22px}
 .grade-card p{margin:0;color:var(--muted);font-size:14px}
+.grade-card.done{border-color:#ffc861;background:#fffdf5}
 .tags{margin-top:8px;display:flex;gap:4px;flex-wrap:wrap}
 .tag{font-size:12px;background:#fff3e3;border-radius:8px;padding:2px 8px}
-.subj{display:flex;flex-direction:column;gap:6px}
+.cont{display:flex;align-items:center;gap:12px;width:100%;background:linear-gradient(90deg,#ffe9c7,#fff);border:3px solid #ffc861;border-radius:18px;padding:12px 16px;font-size:17px;font-weight:800;margin-bottom:14px;text-align:left;box-shadow:0 4px 0 #f1c97a}
+.cont .e{font-size:34px}
+.cont small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+.mission{display:flex;align-items:center;gap:12px;background:#fff;border:3px solid var(--line);border-radius:18px;padding:12px 16px;margin-bottom:16px;flex-wrap:wrap}
+.mission .t{font-weight:800;flex:1;min-width:160px}
+.mission .t small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+.mission .prog{width:120px}
+.mission.ok{border-color:#3bb273;background:#f0fbf4}
+.subj{display:flex;flex-direction:column;gap:6px;position:relative}
 .subj .emo{font-size:44px}
-.subj h3{margin:0;font-size:20px}
+.subj h3{margin:0;font-size:20px;display:flex;justify-content:space-between;align-items:center}
+.subj h3 span{font-size:13px;color:var(--muted);font-weight:600}
 .subj .world{color:var(--muted);font-size:14px}
 .prog{height:10px;background:#f3eadd;border-radius:9px;overflow:hidden}
-.prog>i{display:block;height:100%;background:linear-gradient(90deg,#ffc861,var(--pri))}
+.prog>i{display:block;height:100%;background:linear-gradient(90deg,#ffc861,var(--pri));transition:width .5s}
 .levels{display:flex;gap:6px;margin-top:6px}
-.lv{flex:1;border:2px solid var(--line);background:#fffaf2;border-radius:12px;padding:8px 2px;font-weight:700;font-size:13px}
-.lv .st{display:block;font-size:12px;letter-spacing:-1px}
+.lv{flex:1;border:2px solid var(--line);background:#fffaf2;border-radius:12px;padding:8px 2px;font-weight:700;font-size:13px;position:relative}
+.lv .st{display:block;font-size:12px;letter-spacing:-1px;color:#e9a400}
 .lv:hover{border-color:var(--pri)}
 .lv.lock{opacity:.45;cursor:not-allowed}
+.lv.next{border-color:var(--pri);background:#fff3e3;animation:pulse 1.6s infinite}
+.lv.boss{border-color:#d9c8ff;background:#f7f2ff}
+.lv.boss.next{border-color:var(--boss);animation:pulseBoss 1.6s infinite}
 .back{background:none;border:none;color:var(--pri-d);font-weight:700;font-size:15px;padding:4px 0}
-.btn-pri{background:var(--pri);color:#fff;border:none;border-radius:14px;padding:12px 22px;font-size:17px;font-weight:800;box-shadow:0 4px 0 var(--pri-d)}
+.btn-pri{background:var(--pri);color:#fff;border:none;border-radius:14px;padding:12px 22px;font-size:17px;font-weight:800;box-shadow:0 4px 0 var(--pri-d);transition:transform .1s}
+.btn-pri:hover{transform:translateY(-1px)}
 .btn-pri:active{transform:translateY(2px);box-shadow:0 2px 0 var(--pri-d)}
+.btn-pri:disabled{opacity:.5;cursor:not-allowed}
 .btn-ghost{background:#fff;border:2px solid var(--line);border-radius:14px;padding:10px 18px;font-size:15px;font-weight:700}
+.btn-ghost:hover{border-color:var(--pri)}
 /* quiz */
 .quiz{max-width:680px;margin:0 auto}
-.qhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700}
+.qhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700;gap:8px;flex-wrap:wrap}
 .hearts{font-size:20px;letter-spacing:2px}
+.hearts.hit{animation:shake .45s}
 .npc{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
-.npc .face{font-size:44px;line-height:1}
-.bubble{background:#fff;border:3px solid var(--line);border-radius:18px;padding:10px 14px;flex:1;font-size:15px}
-.qcard{background:#fff;border:3px solid var(--line);border-radius:22px;padding:22px}
+.npc .face{font-size:44px;line-height:1;animation:floaty 2.5s ease-in-out infinite}
+.bubble{background:#fff;border:3px solid var(--line);border-radius:18px;padding:10px 14px;flex:1;font-size:15px;animation:pop .3s}
+.qcard{background:#fff;border:3px solid var(--line);border-radius:22px;padding:22px;position:relative;animation:rise .35s}
+.boss .qcard{border-color:#d9c8ff;background:#fdfbff}
+.boss .bubble{border-color:#d9c8ff}
 .qtext{font-size:23px;font-weight:800;line-height:1.5;margin-bottom:16px;white-space:pre-line}
 .opts{display:grid;gap:10px;grid-template-columns:1fr 1fr}
-.opt{background:#fffaf2;border:3px solid var(--line);border-radius:16px;padding:14px;font-size:19px;font-weight:700;text-align:left}
-.opt:hover:not(:disabled){border-color:var(--pri)}
-.opt.right{background:#e3f7ec;border-color:var(--ok)}
-.opt.wrong{background:#fde8e8;border-color:var(--bad)}
-.explain{margin-top:14px;padding:12px;border-radius:14px;background:#fff6dd;display:none;font-size:15px}
+.opt{background:#fffaf2;border:3px solid var(--line);border-radius:16px;padding:14px 14px 14px 44px;font-size:19px;font-weight:700;text-align:left;position:relative;transition:transform .1s,border-color .1s}
+.opt .k{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:8px;background:#f3eadd;color:var(--muted);font-size:13px;display:flex;align-items:center;justify-content:center}
+.opt:hover:not(:disabled){border-color:var(--pri);transform:translateY(-2px)}
+.opt.right{background:#e3f7ec;border-color:var(--ok);animation:pop .35s}
+.opt.right .k{background:var(--ok);color:#fff}
+.opt.wrong{background:#fde8e8;border-color:var(--bad);animation:shake .4s}
+.opt:disabled{cursor:default}
+.explain{margin-top:14px;padding:12px;border-radius:14px;background:#fff6dd;display:none;font-size:15px;animation:rise .3s}
 .speak{background:#e8f4ff;border:2px solid #b6dcff;border-radius:12px;padding:6px 12px;font-weight:700;margin-bottom:12px}
+.combo{position:absolute;top:-16px;right:14px;background:linear-gradient(90deg,#ff5f6d,#ffc371);color:#fff;font-weight:900;padding:6px 14px;border-radius:999px;box-shadow:0 3px 0 #c9452f;animation:popBadge .45s;font-size:15px}
+.bonus{position:absolute;right:20px;top:60px;color:#e9a400;font-weight:900;font-size:22px;animation:floatUp 1.2s forwards;pointer-events:none}
 .center{text-align:center}
-.result .big{font-size:64px}
+.result .big{font-size:64px;animation:pop .5s}
+.result .star{display:inline-block;font-size:40px;animation:starIn .6s both}
+.wrongs{text-align:left;margin:12px auto 0;max-width:520px;background:#fff6dd;border-radius:14px;padding:10px 14px;font-size:14px}
+.wrongs div{padding:4px 0;border-bottom:1px dashed #eadbb8}
+.wrongs div:last-child{border:none}
 .modal-bg{position:fixed;inset:0;background:rgba(40,30,20,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
-.modal{background:#fff;border-radius:22px;max-width:620px;width:100%;max-height:85vh;overflow:auto;padding:22px}
+.modal{background:#fff;border-radius:22px;max-width:620px;width:100%;max-height:85vh;overflow:auto;padding:22px;animation:pop .3s}
 .modal h2{margin-top:0}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{flex:1;border:2px solid var(--line);background:#fff;border-radius:12px;padding:8px;font-weight:700}
+.tabs button.on{background:var(--pri);border-color:var(--pri);color:#fff}
 .stickers{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px}
 .stk{border:2px dashed var(--line);border-radius:14px;text-align:center;padding:8px 2px;font-size:12px}
 .stk .e{font-size:34px;display:block}
 .stk.have{border-style:solid;border-color:#ffc861;background:#fff8e5}
+.stk.new{animation:starIn .6s}
+.av{border:2px solid var(--line);border-radius:14px;text-align:center;padding:8px 4px;background:#fff;font-size:12px;display:flex;flex-direction:column;gap:4px;align-items:center}
+.av .e{font-size:36px}
+.av.on{border-color:var(--pri);background:#fff3e3}
+.av button{font-size:12px;border-radius:8px;border:none;background:var(--pri);color:#fff;padding:4px 8px;font-weight:700}
+.av button:disabled{background:#ddd;color:#888;cursor:not-allowed}
+.cf{position:fixed;top:-12px;width:10px;height:14px;border-radius:2px;animation:fall linear forwards;z-index:20;pointer-events:none}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#3b2f2a;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:30;animation:rise .3s;max-width:90vw}
 footer{text-align:center;color:var(--muted);font-size:13px;margin:40px 0 16px}
 footer a{color:var(--pri-d);cursor:pointer;margin:0 6px}
-@media (max-width:560px){.opts{grid-template-columns:1fr}.qtext{font-size:20px}h1{font-size:24px}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@keyframes popBadge{0%{transform:scale(0) rotate(-20deg)}60%{transform:scale(1.3) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes starIn{0%{transform:scale(0) rotate(-180deg);opacity:0}70%{transform:scale(1.4)}100%{transform:scale(1);opacity:1}}
+@keyframes floatUp{to{transform:translateY(-40px);opacity:0}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,138,61,.5)}50%{box-shadow:0 0 0 7px rgba(255,138,61,0)}}
+@keyframes pulseBoss{0%,100%{box-shadow:0 0 0 0 rgba(142,92,246,.5)}50%{box-shadow:0 0 0 7px rgba(142,92,246,0)}}
+@media (max-width:560px){.opts{grid-template-columns:1fr}.qtext{font-size:20px}h1{font-size:24px}.opt{font-size:17px;padding:12px 12px 12px 40px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand">🏝️ 知識島大冒險 <small>國小全科闖關</small></div>
+    <div class="brand"><button class="avatar" id="avBtn" onclick="openShop('avatar')" title="更換角色">🧒</button><div>🏝️ 知識島大冒險<small>國小全科闖關</small></div></div>
     <div class="stats">
       <span class="pill" title="金幣">🪙 <b id="sCoin">0</b></span>
       <span class="pill" title="星星">⭐ <b id="sStar">0</b></span>
       <span class="pill" title="連續學習天數">🔥 <b id="sStreak">0</b> 天</span>
-      <button class="pill btn" onclick="openStickers()">🎴 貼紙簿</button>
+      <button class="pill btn" onclick="openShop()">🎁 商店</button>
       <button class="pill btn" onclick="toggleSound()" id="sndBtn">🔊</button>
     </div>
   </header>
@@ -520,146 +574,228 @@ function mk(q,a,opts,ex){const s=[...new Set(opts.map(String))];s.splice(s.index
 
 /* ================== 狀態（存在瀏覽器） ================== */
 const KEY="kidsIsland_v1";
-const FRESH=()=>({coin:0,star:0,streak:0,last:"",prog:{},stickers:[],sound:true});
-let S; try{S=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){} S=S||FRESH();
+const today=(o=0)=>new Date(Date.now()-o*864e5).toLocaleDateString("sv");
+const FRESH=()=>({coin:0,star:0,streak:0,last:"",prog:{},stickers:[],sound:true,avatar:"🧒",owned:["🧒","👧"],lastGrade:0,daily:{d:"",n:0,claimed:false},wrongs:[],played:0,right:0});
+let S;try{S=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}S=Object.assign(FRESH(),S||{});
+if(!S.daily||S.daily.d!==today())S.daily={d:today(),n:0,claimed:false};
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-function touchStreak(){const d=new Date().toISOString().slice(0,10);if(S.last===d)return;const y=new Date(Date.now()-864e5).toISOString().slice(0,10);S.streak=S.last===y?S.streak+1:1;S.last=d;save()}
-function hud(){sCoin.textContent=S.coin;sStar.textContent=S.star;sStreak.textContent=S.streak;sndBtn.textContent=S.sound?"🔊":"🔇"}
-function toggleSound(){S.sound=!S.sound;save();hud()}
+function touchStreak(){const d=today();if(S.last===d)return;S.streak=S.last===today(1)?S.streak+1:1;S.last=d;save()}
+function hud(){sCoin.textContent=S.coin;sStar.textContent=S.star;sStreak.textContent=S.streak;sndBtn.textContent=S.sound?"🔊":"🔇";avBtn.textContent=S.avatar}
+function bump(id){const el=document.getElementById(id).parentElement;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump")}
+function toggleSound(){S.sound=!S.sound;save();hud();if(S.sound)sfx("ok")}
 const pk=(g,s)=>`${g}-${s}`;
 const getStars=(g,s,l)=>(S.prog[pk(g,s)]||[])[l]||0;
+const subjStars=(g,s)=>[0,1,2].reduce((m,l)=>m+getStars(g,s,l),0);
+const LVNAME=["第 1 關","第 2 關","👑 魔王關"];
+const DAILY_GOAL=3, DAILY_REWARD=30;
+const AVATARS=[{e:"🧒",c:0},{e:"👧",c:0},{e:"🦸",c:60},{e:"🧜‍♀️",c:80},{e:"🧙",c:100},{e:"🤖",c:120},{e:"🐉",c:160},{e:"👑",c:220},{e:"🦄",c:300}];
+const STICKERS=["🦄","🐲","🦖","🐙","🦋","🐳","🦁","🐧","🦩","🐝","🌻","🍉","🚀","🌈","⭐","🎈","🏰","🧸","🎨","🎵","🍩","🦔","🐢","🦜"];
 
-/* 音效 */
-let ac;function beep(ok){if(!S.sound)return;try{ac=ac||new AudioContext();const o=ac.createOscillator(),v=ac.createGain();o.connect(v);v.connect(ac.destination);o.frequency.value=ok?880:220;o.type=ok?"triangle":"sawtooth";v.gain.setValueAtTime(.15,ac.currentTime);v.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.3);o.start();o.stop(ac.currentTime+.3)}catch(e){}}
-function say(text){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=.85;speechSynthesis.speak(u)}
+/* 音效與特效 */
+let ac;
+function tone(f,t0,d,type="triangle",g=.12){const o=ac.createOscillator(),v=ac.createGain();o.type=type;o.frequency.value=f;o.connect(v);v.connect(ac.destination);const t=ac.currentTime+t0;v.gain.setValueAtTime(g,t);v.gain.exponentialRampToValueAtTime(.001,t+d);o.start(t);o.stop(t+d)}
+function sfx(k){if(!S.sound)return;try{ac=ac||new AudioContext();if(ac.state==="suspended")ac.resume();
+  if(k==="ok"){tone(660,0,.15);tone(880,.12,.22)}
+  else if(k==="bad"){tone(220,0,.3,"sawtooth",.07)}
+  else if(k==="win"){[523,659,784,1047].forEach((f,i)=>tone(f,i*.12,.35))}
+  else if(k==="coin"){tone(1200,0,.08,"square",.05);tone(1700,.08,.14,"square",.05)}
+  else if(k==="combo"){tone(880,0,.1);tone(1100,.08,.1);tone(1320,.16,.2)}}catch(e){}}
+function say(text){if(!("speechSynthesis" in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=.85;speechSynthesis.speak(u)}catch(e){}}
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2000)}
+function confetti(n=90){const cols=["#ff8a3d","#ffc861","#3bb273","#4fb3ff","#e5484d","#b388ff"];for(let i=0;i<n;i++){const d=document.createElement("i");d.className="cf";d.style.cssText=`left:${Math.random()*100}vw;background:${cols[i%6]};animation-duration:${1.8+Math.random()*1.6}s;animation-delay:${Math.random()*.7}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(d);setTimeout(()=>d.remove(),4000)}}
 
 /* ================== 畫面 ================== */
 const app=document.getElementById("app");
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=R(0,i);[a[i],a[j]]=[a[j],a[i]]}return a}
 
+function missionHTML(){
+  const d=S.daily, done=d.n>=DAILY_GOAL;
+  return `<div class="mission ${done?"ok":""}"><span style="font-size:30px">🎯</span>
+    <div class="t">今日任務：通關 ${DAILY_GOAL} 關（任何科目）<small>${d.claimed?"✅ 今天完成了，明天再來！":done?"任務完成！快領獎勵":"拿到至少 1 顆星就算通關"}</small></div>
+    <div class="prog"><i style="width:${Math.min(d.n,DAILY_GOAL)/DAILY_GOAL*100}%"></i></div>
+    <b>${Math.min(d.n,DAILY_GOAL)}/${DAILY_GOAL}</b>
+    ${done&&!d.claimed?`<button class="btn-pri" onclick="claimDaily()">領取 🪙 ${DAILY_REWARD}</button>`:""}</div>`;
+}
+function claimDaily(){if(S.daily.n<DAILY_GOAL||S.daily.claimed)return;S.daily.claimed=true;S.coin+=DAILY_REWARD;save();hud();bump("sCoin");sfx("coin");confetti(50);toast(`🎯 任務完成！獲得 ${DAILY_REWARD} 金幣`);home()}
+
 function home(){
-  location.hash="";
+  Q=null; location.hash="";
+  const LG=GRADES[S.lastGrade-1];
   app.innerHTML=`<h1>選擇你的年級島 🏝️</h1><p class="sub">每個年級是一座島，每個科目是一個關卡世界</p>
-  <div class="grid g3">${GRADES.map(G=>{
+  ${LG?`<button class="cont rise" onclick="grade(${LG.g})"><span class="e">${LG.emo}</span><span>▶ 繼續冒險：${LG.name}・${LG.place}<small>上次玩到這裡</small></span></button>`:""}
+  ${missionHTML()}
+  <div class="grid g3">${GRADES.map((G,i)=>{
     const subs=SUBJ_BY_GRADE(G.g);
-    const tot=subs.length*LEVELS*3, got=subs.reduce((n,s)=>n+[0,1,2].reduce((m,l)=>m+getStars(G.g,s,l),0),0);
-    return `<button class="card grade-card" onclick="grade(${G.g})">
-      <div class="big">${G.emo}</div><h3>${G.name}・${G.place}</h3>
+    const tot=subs.length*LEVELS*3, got=subs.reduce((n,s)=>n+subjStars(G.g,s),0);
+    return `<button class="card grade-card rise ${got===tot?"done":""}" style="animation-delay:${i*.06}s" onclick="grade(${G.g})">
+      <div class="big">${G.emo}</div><h3>${G.name}・${G.place} ${got===tot?"🏆":""}</h3>
       <p>⭐ ${got} / ${tot}</p>
       <div class="prog" style="margin-top:6px"><i style="width:${got/tot*100}%"></i></div>
       <div class="tags">${subs.map(s=>`<span class="tag">${SUBJECTS[s].emo} ${SUBJECTS[s].name}</span>`).join("")}</div>
-    </button>`}).join("")}</div>`;
+    </button>`}).join("")}</div>
+  ${S.wrongs.length?`<p class="center" style="margin-top:18px"><button class="btn-ghost" onclick="openWrongs()">📒 錯題本（${S.wrongs.length}）</button></p>`:""}`;
 }
 
 function grade(g){
-  location.hash="g"+g;
+  Q=null; location.hash="g"+g; S.lastGrade=g; save();
   const G=GRADES[g-1];
   app.innerHTML=`<button class="back" onclick="home()">⬅ 全部年級</button>
-  <h1>${G.emo} ${G.name}・${G.place}</h1><p class="sub">選一個科目世界開始冒險！每關 ${QPER} 題，答對越多星星越多</p>
-  <div class="grid g3">${SUBJ_BY_GRADE(g).map(s=>{
-    const X=SUBJECTS[s];
-    return `<div class="card subj"><div class="emo">${X.emo}</div><h3>${X.name}</h3><div class="world">${X.world}　${X.npc} ${X.npcName}</div>
+  <h1>${G.emo} ${G.name}・${G.place}</h1><p class="sub">選一個科目世界開始冒險！前兩關 5 題，魔王關 7 題</p>
+  <div class="grid g3">${SUBJ_BY_GRADE(g).map((s,i)=>{
+    const X=SUBJECTS[s], got=subjStars(g,s);
+    const nextL=[0,1,2].find(l=>getStars(g,s,l)<3&&(l===0||getStars(g,s,l-1)>0));
+    return `<div class="card subj rise" style="animation-delay:${i*.06}s"><div class="emo">${X.emo}</div><h3>${X.name}<span>★ ${got}/9</span></h3><div class="world">${X.world}　${X.npc} ${X.npcName}</div>
+    <div class="prog"><i style="width:${got/9*100}%"></i></div>
     <div class="levels">${[0,1,2].map(l=>{
       const st=getStars(g,s,l), locked=l>0&&getStars(g,s,l-1)===0;
-      return `<button class="lv ${locked?"lock":""}" ${locked?"disabled title='先完成上一關'":""} onclick="play(${g},'${s}',${l})">
-        ${locked?"🔒":""}第 ${l+1} 關<span class="st">${"★".repeat(st)}${"☆".repeat(3-st)}</span></button>`}).join("")}</div></div>`}).join("")}</div>`;
+      return `<button class="lv ${locked?"lock":""} ${l===2?"boss":""} ${l===nextL&&!locked?"next":""}" ${locked?"disabled title='先完成上一關'":""} onclick="play(${g},'${s}',${l})">
+        ${locked?"🔒 ":""}${LVNAME[l]}<span class="st">${"★".repeat(st)}${"☆".repeat(3-st)}</span></button>`}).join("")}</div></div>`}).join("")}</div>`;
 }
 
 let Q=null;
 function play(g,s,l){
+  const n=l===2?7:QPER;
   let qs;
-  if(s==="math") qs=Array.from({length:QPER},()=>mathQ(g,l));
+  if(s==="math") qs=Array.from({length:n},()=>mathQ(g,l));
   else{
     const pool=BANK[s][g]||[];
-    qs=shuffle(pool).slice(0,QPER);
-    while(qs.length<QPER) qs.push(pool[R(0,pool.length-1)]);
+    qs=shuffle(pool).slice(0,n);
+    while(qs.length<n) qs.push(pool[R(0,pool.length-1)]);
   }
-  Q={g,s,l,qs:qs.map(([q,o,e])=>({q,ans:o[0],opts:shuffle(o),e})),i:0,right:0,hearts:3};
+  Q={g,s,l,n,qs:qs.map(([q,o,e])=>({q,ans:o[0],opts:shuffle(o),e})),i:0,right:0,hearts:3,combo:0,maxCombo:0,bonus:0,wrong:[]};
+  sfx("coin");
   ask();
 }
 
 function ask(){
-  const X=SUBJECTS[Q.s], it=Q.qs[Q.i];
-  const cheers=["加油！你一定可以！","仔細想一想喔～","慢慢來，不用急！","這題考驗你的觀察力！","最後衝刺！"];
+  const X=SUBJECTS[Q.s], it=Q.qs[Q.i], boss=Q.l===2;
+  const cheers=boss?["👑 魔王關！題目比較多，穩穩答！","魔王在看著你，別緊張～","你比魔王聰明多了！","快破關了，堅持住！","剩幾題了，衝啊！","魔王開始冒汗了！","最後一擊！"]
+                   :["加油！你一定可以！","仔細想一想喔～","慢慢來，不用急！","這題考驗你的觀察力！","最後衝刺！"];
   const enOnly = Q.s==="english" ? (it.q.match(/[A-Za-z][A-Za-z ,'?.!_]+/g)||[]).join(" ").replace(/_+/g,"blank") : "";
-  app.innerHTML=`<div class="quiz">
+  app.innerHTML=`<div class="quiz ${boss?"boss":""}">
     <div class="qhead"><button class="back" onclick="grade(${Q.g})">⬅ 離開</button>
-      <span>${X.emo} ${X.name}・第 ${Q.l+1} 關　${Q.i+1}/${QPER}</span>
-      <span class="hearts">${"❤️".repeat(Q.hearts)}${"🤍".repeat(3-Q.hearts)}</span></div>
-    <div class="prog" style="margin-bottom:14px"><i style="width:${Q.i/QPER*100}%"></i></div>
-    <div class="npc"><div class="face">${X.npc}</div><div class="bubble"><b>${X.npcName}：</b>${cheers[Q.i%cheers.length]}</div></div>
+      <span>${X.emo} ${X.name}・${LVNAME[Q.l]}　${Q.i+1}/${Q.n}</span>
+      <span class="hearts" id="hearts">${"❤️".repeat(Q.hearts)}${"🤍".repeat(3-Q.hearts)}</span></div>
+    <div class="prog" style="margin-bottom:14px"><i style="width:${Q.i/Q.n*100}%"></i></div>
+    <div class="npc"><div class="face">${boss?"👾":X.npc}</div><div class="bubble"><b>${boss?"魔王":X.npcName}：</b>${cheers[Q.i%cheers.length]}</div></div>
     <div class="qcard">
+      ${Q.combo>=2?`<div class="combo">🔥 連擊 x${Q.combo}</div>`:""}
       ${enOnly?`<button class="speak" onclick="say('${enOnly.replace(/'/g,"\\'")}')">🔊 聽發音</button>`:""}
       <div class="qtext">${it.q}</div>
-      <div class="opts">${it.opts.map((o,k)=>`<button class="opt" data-k="${k}">${o}</button>`).join("")}</div>
+      <div class="opts">${it.opts.map((o,k)=>`<button class="opt" data-k="${k}"><span class="k">${k+1}</span>${o}</button>`).join("")}</div>
       <div class="explain" id="ex"></div>
-    </div></div>`;
+    </div>
+    <p class="center" style="color:var(--muted);font-size:12px;margin-top:8px">💡 電腦可按數字鍵 1–4 作答，Enter 下一題</p></div>`;
   app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>pick(b));
 }
 
 function pick(btn){
-  const it=Q.qs[Q.i], ok=btn.textContent===it.ans;
-  app.querySelectorAll(".opt").forEach(b=>{b.disabled=true;if(b.textContent===it.ans)b.classList.add("right")});
-  if(!ok){btn.classList.add("wrong");Q.hearts--}else Q.right++;
-  beep(ok);
+  const it=Q.qs[Q.i], k=+btn.dataset.k, ok=it.opts[k]===it.ans;
+  app.querySelectorAll(".opt").forEach(b=>{b.disabled=true;if(it.opts[+b.dataset.k]===it.ans)b.classList.add("right")});
+  let extra="";
+  if(ok){
+    Q.right++; Q.combo++; Q.maxCombo=Math.max(Q.maxCombo,Q.combo);
+    if(Q.combo>=2){const b=Q.combo-1;Q.bonus+=b;extra=`<span class="bonus">+${b} 🪙 連擊！</span>`;sfx("combo")}else sfx("ok");
+  }else{
+    btn.classList.add("wrong");Q.hearts--;Q.combo=0;sfx("bad");
+    Q.wrong.push({q:it.q,a:it.ans,s:Q.s,g:Q.g});
+    const h=document.getElementById("hearts");h.textContent="❤️".repeat(Q.hearts)+"🤍".repeat(3-Q.hearts);h.classList.add("hit");
+  }
   if(Q.s==="english"&&/^[A-Za-z]/.test(it.ans))say(it.ans);
+  const last=Q.hearts<=0||Q.i===Q.n-1;
   const ex=document.getElementById("ex");
   ex.style.display="block";
-  ex.innerHTML=`${ok?"✅ 答對了！":"❌ 正確答案是「"+it.ans+"」"} ${it.e?"<br>💡 "+it.e:""}
-    <div style="margin-top:10px;text-align:right"><button class="btn-pri" id="nx">${Q.hearts<=0||Q.i===QPER-1?"看結果":"下一題 ➜"}</button></div>`;
-  document.getElementById("nx").onclick=()=>{ if(Q.hearts<=0||Q.i===QPER-1) finish(); else {Q.i++;ask()} };
+  ex.innerHTML=`${extra}${ok?"✅ 答對了！":"❌ 正確答案是「"+it.ans+"」"} ${it.e?"<br>💡 "+it.e:""}
+    <div style="margin-top:10px;text-align:right"><button class="btn-pri" id="nx">${last?"看結果 🏁":"下一題 ➜"}</button></div>`;
+  document.getElementById("nx").onclick=()=>{ if(last) finish(); else {Q.i++;ask()} };
+  if(!ok&&Q.hearts<=0)toast("💔 愛心用完了…先看看結果吧");
 }
 
-const STICKERS=["🦄","🐲","🦖","🐙","🦋","🐳","🦁","🐧","🦩","🐝","🌻","🍉","🚀","🌈","⭐","🎈","🏰","🧸","🎨","🎵","🍩","🦔","🐢","🦜"];
 function finish(){
-  const pct=Q.right/QPER, stars=Q.hearts<=0?0:pct===1?3:pct>=.8?2:pct>=.6?1:0;
+  const pct=Q.right/Q.n, stars=Q.hearts<=0?0:pct===1?3:pct>=.8?2:pct>=.6?1:0;
   const key=pk(Q.g,Q.s); S.prog[key]=S.prog[key]||[0,0,0];
   const gain=Math.max(0,stars-S.prog[key][Q.l]);
   S.prog[key][Q.l]=Math.max(S.prog[key][Q.l],stars);
-  const coins=Q.right*2+stars*3;
-  S.coin+=coins; S.star+=gain; touchStreak(); save(); hud();
-  const X=SUBJECTS[Q.s];
-  const msg=stars===3?"太厲害了！全部答對！":stars>=1?"做得很好！再挑戰拿滿星吧！":"沒關係，每次練習都在進步！";
+  const bossBonus=Q.l===2?stars*3:0;
+  const coins=Q.right*2+stars*3+Q.bonus+bossBonus;
+  S.coin+=coins; S.star+=gain; S.played++; S.right+=Q.right;
+  if(stars>0)S.daily.n++;
+  S.wrongs=[...Q.wrong,...S.wrongs].slice(0,40);
+  touchStreak(); save(); hud();
+  const X=SUBJECTS[Q.s], boss=Q.l===2;
+  const msg=stars===3?(boss?"你打敗魔王了！太強了！":"太厲害了！全部答對！"):stars>=1?"做得很好！再挑戰拿滿星吧！":"沒關係，每次練習都在進步！";
+  const unlockNext=Q.l<LEVELS-1&&stars>0;
+  const dailyDone=S.daily.n>=DAILY_GOAL&&!S.daily.claimed;
   app.innerHTML=`<div class="quiz center result card">
-    <div class="big">${stars?"🏆":"💪"}</div>
-    <h2>${"⭐".repeat(stars)}${"☆".repeat(3-stars)}</h2>
+    <div class="big">${stars===3?"🏆":stars?"🎉":"💪"}</div>
+    <h2>${[0,1,2].map(i=>`<span class="star" style="animation-delay:${.2+i*.25}s">${i<stars?"⭐":"☆"}</span>`).join("")}</h2>
     <p style="font-size:18px">${X.npc} ${msg}</p>
-    <p>答對 <b>${Q.right}</b> / ${QPER} 題　獲得 🪙 <b>${coins}</b> 金幣</p>
-    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+    <p>答對 <b>${Q.right}</b> / ${Q.n} 題${Q.maxCombo>=2?`　🔥 最高連擊 <b>${Q.maxCombo}</b>`:""}</p>
+    <p>獲得 🪙 <b>${coins}</b> 金幣 <span style="color:var(--muted);font-size:13px">（答題 ${Q.right*2}${stars?` + 星星 ${stars*3}`:""}${Q.bonus?` + 連擊 ${Q.bonus}`:""}${bossBonus?` + 魔王 ${bossBonus}`:""}）</span></p>
+    ${gain?`<p style="color:#e9a400;font-weight:800">✨ 新獲得 ${gain} 顆星！</p>`:""}
+    ${dailyDone?`<p><button class="btn-pri" onclick="claimDaily()">🎯 今日任務完成！領取 🪙 ${DAILY_REWARD}</button></p>`:S.daily.n<DAILY_GOAL?`<p style="color:var(--muted);font-size:14px">🎯 今日任務 ${S.daily.n}/${DAILY_GOAL}</p>`:""}
+    ${Q.wrong.length?`<div class="wrongs"><b>📒 錯題回顧</b>${Q.wrong.map(w=>`<div>${w.q.replace(/\n/g," ")}<br>✅ ${w.a}</div>`).join("")}</div>`:""}
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
       <button class="btn-ghost" onclick="play(${Q.g},'${Q.s}',${Q.l})">🔁 再玩一次</button>
-      ${Q.l<LEVELS-1&&stars>0?`<button class="btn-pri" onclick="play(${Q.g},'${Q.s}',${Q.l+1})">下一關 ➜</button>`:""}
+      ${unlockNext?`<button class="btn-pri" onclick="play(${Q.g},'${Q.s}',${Q.l+1})">${Q.l===1?"👑 挑戰魔王關":"下一關 ➜"}</button>`:""}
       <button class="btn-ghost" onclick="grade(${Q.g})">回到島上</button>
+      <button class="btn-ghost" onclick="share(${Q.right},${Q.n},${stars})">📣 分享成績</button>
     </div></div>`;
+  if(stars>=2){confetti(stars===3?120:60);sfx("win")}else if(stars===1)sfx("ok");
+  bump("sCoin");
 }
+function share(r,n,st){const t=`我在「知識島大冒險」${GRADES[Q.g-1].name}${SUBJECTS[Q.s].name}${LVNAME[Q.l]} 答對 ${r}/${n} 題，拿到 ${"⭐".repeat(st)||"☆"}！${location.href.split("#")[0]}`;try{navigator.clipboard.writeText(t).then(()=>toast("已複製成績，貼給爸媽看吧！"),()=>toast(t))}catch(e){toast(t)}}
 
-/* ================== 彈窗：貼紙簿、家長 ================== */
+/* 鍵盤快捷鍵 */
+document.addEventListener("keydown",e=>{
+  if(modalBg.style.display==="flex"){if(e.key==="Escape")closeModal();return}
+  const nx=document.getElementById("nx");
+  if((e.key==="Enter"||e.key===" ")&&nx){e.preventDefault();nx.click();return}
+  const opts=app.querySelectorAll(".opt");const k=+e.key;
+  if(opts.length&&k>=1&&k<=opts.length&&!opts[0].disabled)opts[k-1].click();
+});
+
+/* ================== 彈窗：商店、錯題本、家長 ================== */
 function modal(html){document.getElementById("modal").innerHTML=html+`<div style="text-align:right;margin-top:16px"><button class="btn-ghost" onclick="closeModal()">關閉</button></div>`;modalBg.style.display="flex"}
 function closeModal(){modalBg.style.display="none"}
-function openStickers(){
-  modal(`<h2>🎴 貼紙簿</h2><p>用 🪙 20 金幣抽一張隨機貼紙！目前金幣：<b>${S.coin}</b>　收集：${S.stickers.length}/${STICKERS.length}</p>
-  <button class="btn-pri" onclick="draw()" ${S.coin<20?"disabled style='opacity:.5'":""}>🎁 抽一張（20 🪙）</button>
-  <p id="drew" style="font-size:18px"></p>
-  <div class="stickers">${STICKERS.map(e=>`<div class="stk ${S.stickers.includes(e)?"have":""}"><span class="e">${S.stickers.includes(e)?e:"❔"}</span></div>`).join("")}</div>`);
+function openShop(tab="sticker",drew){
+  const head=`<h2>🎁 獎勵商店 <span style="font-size:14px;color:var(--muted)">金幣 🪙 ${S.coin}</span></h2>
+  <div class="tabs"><button class="${tab==="sticker"?"on":""}" onclick="openShop('sticker')">🎴 抽貼紙</button><button class="${tab==="avatar"?"on":""}" onclick="openShop('avatar')">🧑 角色商店</button></div>`;
+  if(tab==="sticker"){
+    const full=S.stickers.length===STICKERS.length;
+    modal(`${head}<p>用 🪙 20 抽一張隨機貼紙！收集：${S.stickers.length}/${STICKERS.length}${full?" 🏆 全部集滿！":""}</p>
+    <button class="btn-pri" onclick="draw()" ${S.coin<20?"disabled":""}>🎁 抽一張（20 🪙）</button>
+    <p id="drew" style="font-size:18px;min-height:28px">${drew?drew.html:""}</p>
+    <div class="stickers">${STICKERS.map(e=>`<div class="stk ${S.stickers.includes(e)?"have":""} ${drew&&drew.isNew&&drew.e===e?"new":""}"><span class="e">${S.stickers.includes(e)?e:"❔"}</span></div>`).join("")}</div>`);
+  }else{
+    modal(`${head}<p>用金幣解鎖新角色，當作你的頭像！</p>
+    <div class="stickers">${AVATARS.map(a=>{const own=S.owned.includes(a.e),on=S.avatar===a.e;
+      return `<div class="av ${on?"on":""}"><span class="e">${a.e}</span>${on?`<b style="font-size:12px;color:var(--pri-d)">使用中</b>`:own?`<button onclick="useAv('${a.e}')">使用</button>`:`<button onclick="buyAv('${a.e}')" ${S.coin<a.c?"disabled":""}>🪙 ${a.c}</button>`}</div>`}).join("")}</div>`);
+  }
 }
-function draw(){
-  if(S.coin<20)return;S.coin-=20;const e=STICKERS[R(0,STICKERS.length-1)];
-  const isNew=!S.stickers.includes(e);if(isNew)S.stickers.push(e);save();hud();openStickers();
-  document.getElementById("drew").innerHTML=`你抽到了 <span style="font-size:34px">${e}</span> ${isNew?"🎉 新貼紙！":"（重複了，下次加油）"}`;
-}
+function draw(){if(S.coin<20)return;S.coin-=20;const e=STICKERS[R(0,STICKERS.length-1)];const isNew=!S.stickers.includes(e);if(isNew)S.stickers.push(e);save();hud();sfx(isNew?"win":"coin");openShop("sticker",{e,isNew,html:`你抽到了 <span style="font-size:34px">${e}</span> ${isNew?"🎉 新貼紙！":"（重複了，下次加油）"}`})}
+function useAv(e){S.avatar=e;save();hud();openShop("avatar")}
+function buyAv(e){const a=AVATARS.find(x=>x.e===e);if(!a||S.coin<a.c||S.owned.includes(e))return;S.coin-=a.c;S.owned.push(e);S.avatar=e;save();hud();sfx("win");confetti(40);openShop("avatar")}
+function openWrongs(){modal(`<h2>📒 錯題本</h2><p style="color:var(--muted);font-size:14px">最近答錯的題目，複習一下再去挑戰！</p>
+ <div class="wrongs" style="max-width:none">${S.wrongs.map(w=>`<div><span class="tag">${GRADES[w.g-1].name} ${SUBJECTS[w.s].name}</span> ${w.q.replace(/\n/g," ")}<br>✅ ${w.a}</div>`).join("")}</div>
+ <p style="margin-top:10px"><button class="btn-ghost" onclick="S.wrongs=[];save();closeModal();home()">🧹 清空錯題本</button></p>`)}
 function openParents(){
   modal(`<h2>👪 給家長的說明</h2>
   <p><b>網站設計：</b>以「年級島 × 科目世界 × 三個關卡」組成。1–2 年級：國語、數學、英語、生活；3–6 年級：國語、數學、英語、自然、社會。</p>
   <ul>
-   <li>每關 5 題、3 顆愛心，答錯扣一顆；依答對率得到 0–3 顆星，前一關有星才會解鎖下一關。</li>
+   <li>第 1、2 關各 5 題，第 3 關「魔王關」7 題；每關 3 顆愛心，答錯扣一顆。依答對率得到 0–3 顆星，前一關有星才會解鎖下一關。</li>
+   <li>連續答對會累積「連擊」，額外獲得金幣，鼓勵孩子專心看題。</li>
+   <li>每日任務：一天通關 3 關可領 30 金幣；🔥 連續天數鼓勵每天練習。</li>
    <li>數學題目依年級隨機產生（加減、九九乘法、多位數、四則運算、分數小數、比與百分率、面積周長），每次都不同。</li>
-   <li>英語題可按「🔊 聽發音」使用瀏覽器內建語音朗讀。</li>
-   <li>金幣只能在站內抽貼紙，不涉及任何付費。</li>
+   <li>英語題可按「🔊 聽發音」使用瀏覽器內建語音朗讀。電腦可用數字鍵 1–4 作答。</li>
+   <li>答錯的題目會記在「錯題本」，方便複習。</li>
+   <li>金幣只能在站內抽貼紙、解鎖頭像角色，不涉及任何付費。</li>
    <li>學習紀錄只存在這台裝置的瀏覽器中，不會上傳。</li>
   </ul>
-  <p><b>建議用法：</b>每天 10–15 分鐘、玩 2–3 關，維持 🔥 連續天數比一次玩很久更有效。答錯時請陪孩子看 💡 解說。</p>`);
+  <p><b>建議用法：</b>每天 10–15 分鐘、完成今日任務即可，維持 🔥 連續天數比一次玩很久更有效。答錯時請陪孩子看 💡 解說。</p>`);
 }
-function resetAll(){modal(`<h2>🔄 重設進度</h2><p>確定要清除所有進度、金幣與貼紙嗎？</p><button class="btn-pri" onclick="doReset()">確定清除</button>`)}
-function doReset(){S=FRESH();save();closeModal();hud();home()}
+function resetAll(){modal(`<h2>🔄 重設進度</h2><p>確定要清除所有進度、金幣、貼紙與角色嗎？</p><button class="btn-pri" onclick="doReset()">確定清除</button>`)}
+function doReset(){S=FRESH();S.daily.d=today();save();closeModal();hud();home()}
 
 /* 啟動 */
 hud();
