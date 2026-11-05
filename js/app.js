@@ -7,14 +7,42 @@ const today=(o=0)=>new Date(Date.now()-o*864e5).toLocaleDateString("sv");
 const FRESH=()=>({v:3,coin:0,star:0,streak:0,last:"",prog:{},cards:[],sound:true,music:false,avatar:"🧒",owned:["🧒","👧"],theme:"sun",themes:["sun"],
   items:{potion:0,shield:0,hint:0},lastGrade:0,daily:{d:"",n:0,claimed:false},wrongs:[],played:0,right:0,stats:{},seen:{},ach:[],
   best:{combo:0,coins:0,daily:0,practice:0},notesRead:{},pendingShield:"",history:{}});
-let S;try{S=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}
-S=Object.assign(FRESH(),S||{});
-/* 舊版資料轉換 */
-if(S.stickers){S.cards=[...new Set([...(S.cards||[]),...S.stickers.filter(e=>CARDS.some(c=>c.e===e))])];delete S.stickers}
-for(const k in S.prog){const p=S.prog[k];if(Array.isArray(p))S.prog[k]={c:[p[0]||0,p[1]||0],boss:p[2]||0,full:false}}
-S.items=Object.assign({potion:0,shield:0,hint:0},S.items||{});S.best=Object.assign({combo:0,coins:0,daily:0,practice:0},S.best||{});
-if(!S.daily||S.daily.d!==today())S.daily={d:today(),n:0,claimed:false};
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+/* ---------- 多人檔案 ---------- */
+const PKEY="kidsIsland_profiles";
+const lsGet=(k)=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let PF=lsGet(PKEY)||{list:[],current:""};
+/* 舊版單人資料 → 轉成第一位小朋友 */
+if(!PF.list.length&&lsGet(KEY)){const id="p"+Date.now();PF.list.push({id,name:"小冒險家",avatar:(lsGet(KEY).avatar)||"🧒",created:today()});lsSet(KEY+"_"+id,lsGet(KEY));localStorage.removeItem(KEY);lsSet(PKEY,PF)}
+let S=FRESH();
+function normalize(S){
+  if(S.stickers){S.cards=[...new Set([...(S.cards||[]),...S.stickers.filter(e=>CARDS.some(c=>c.e===e))])];delete S.stickers}
+  for(const k in S.prog){const p=S.prog[k];if(Array.isArray(p))S.prog[k]={c:[p[0]||0,p[1]||0],boss:p[2]||0,full:false}}
+  S.items=Object.assign({potion:0,shield:0,hint:0},S.items||{});S.best=Object.assign({combo:0,coins:0,daily:0,practice:0},S.best||{});
+  if(!S.daily||S.daily.d!==today())S.daily={d:today(),n:0,claimed:false};
+  return S;
+}
+function curProfile(){return PF.list.find(p=>p.id===PF.current)}
+function loadProfile(id){const p=PF.list.find(x=>x.id===id);if(!p)return false;PF.current=id;lsSet(PKEY,PF);S=normalize(Object.assign(FRESH(),lsGet(KEY+"_"+id)||{}));S.avatar=p.avatar;S.name=p.name;return true}
+const save=()=>{const p=curProfile();if(!p)return;p.avatar=S.avatar;lsSet(PKEY,PF);lsSet(KEY+"_"+p.id,S)};
+function profileStars(id){const d=lsGet(KEY+"_"+id);return d?(d.star||0):0}
+function addProfile(name,avatar){name=(name||"").trim().slice(0,10);if(!name){toast("請先輸入名字");return}if(PF.list.length>=8){toast("最多 8 位小朋友");return}const id="p"+Date.now();PF.list.push({id,name,avatar,created:today()});lsSet(PKEY,PF);loadProfile(id);save();hud();sfx("win");confetti(60);toast(`歡迎 ${avatar} ${name}！`);home()}
+function deleteProfile(id){PF.list=PF.list.filter(p=>p.id!==id);localStorage.removeItem(KEY+"_"+id);if(PF.current===id)PF.current="";lsSet(PKEY,PF);closeModal();if(!PF.current)loginScreen();else home()}
+function renameProfile(){const n=($("pfName").value||"").trim().slice(0,10);if(!n){toast("名字不能空白");return}const p=curProfile();p.name=n;S.name=n;save();hud();closeModal();toast("已改名為 "+n);home()}
+let loginAv="🧒";
+function loginScreen(){
+  Q=null;$("story").style.display="none";closeModal();
+  const avs=["🧒","👧","👦","🧑","🐱","🐶","🐰","🦊","🐼","🐯","🦁","🐸","🦄","🐲","🤖","👑"];
+  app.innerHTML=`<div class="login rise"><div class="big">🏝️</div><h1>誰要來冒險？</h1><p class="sub">每位小朋友有自己的進度、星星和金幣。點自己的名字開始！</p>
+    <div class="pfs">${PF.list.map(p=>`<button class="pf" onclick="loadProfile('${p.id}');hud();home();sfx('coin')"><span class="e">${p.avatar}</span><b>${esc(p.name)}</b><small>⭐ ${profileStars(p.id)}</small></button>`).join("")}
+      <div class="pf new"><span class="e" id="loginAv">${loginAv}</span><input id="newName" maxlength="10" placeholder="輸入名字" onkeydown="if(event.key==='Enter')addProfile(this.value,loginAv)">
+        <div class="avpick">${avs.map(a=>`<button class="${a===loginAv?"on":""}" onclick="loginAv='${a}';[...this.parentElement.children].forEach(b=>b.classList.remove('on'));this.classList.add('on');$('loginAv').textContent='${a}'">${a}</button>`).join("")}</div>
+        <button class="btn-pri" onclick="addProfile($('newName').value,loginAv)">➕ 新增小朋友</button></div></div>
+    <p class="muted" style="font-size:12px;margin-top:16px">資料只存在這台裝置的瀏覽器裡。若要在別台裝置玩，需重新建立。</p></div>`;
+  document.querySelector(".brand small").textContent="國小全科闖關";
+}
+function openSwitch(){modal(`<h2>🔁 切換小朋友</h2><div class="pfs small">${PF.list.map(p=>`<button class="pf ${p.id===PF.current?"on":""}" onclick="closeModal();loadProfile('${p.id}');hud();home();sfx('coin')"><span class="e">${p.avatar}</span><b>${esc(p.name)}</b><small>⭐ ${profileStars(p.id)}</small></button>`).join("")}</div>
+  <p style="margin-top:12px"><button class="btn-ghost" onclick="closeModal();loginScreen()">➕ 新增小朋友</button></p>`)}
 const app=document.getElementById("app");
 const $=id=>document.getElementById(id);
 const pk=(g,s)=>`${g}-${s}`;
@@ -57,7 +85,7 @@ function buildQs(g,s,ch,n,hard){
 }
 
 /* ---------- HUD / 音效 / 特效 ---------- */
-function hud(){$("sCoin").textContent=S.coin;$("sStar").textContent=S.star;$("sStreak").textContent=S.streak;$("avBtn").textContent=S.avatar;
+function hud(){$("sCoin").textContent=S.coin;$("sStar").textContent=S.star;$("sStreak").textContent=S.streak;$("avBtn").textContent=S.avatar;document.querySelector(".brand small").textContent=S.name?`${S.name} 的冒險`:"國小全科闖關";
   $("sndBtn").textContent=S.sound?"🔊":"🔇";$("sndBtn").classList.toggle("off",!S.sound);$("musBtn").classList.toggle("off",!S.music);applyTheme()}
 function bump(id){const el=$(id).parentElement;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump")}
 function applyTheme(){const t=THEMES.find(x=>x.k===S.theme)||THEMES[0];document.body.style.setProperty("--bg",t.base);document.body.style.setProperty("--bgimg",t.bg);document.body.classList.toggle("dark",!!t.dark)}
@@ -98,7 +126,7 @@ function claimDaily(){if(S.daily.n<DAILY_GOAL||S.daily.claimed)return;S.daily.cl
 function home(){
   Q=null;location.hash="";
   const LG=GRADES[S.lastGrade-1];
-  app.innerHTML=`<div class="hero rise"><div class="big">🏝️</div><div><h1>歡迎回來，${S.avatar} 小冒險家！</h1><p>選一座年級島，闖過每個科目世界，打敗魔王收集星星！</p></div>
+  app.innerHTML=`<div class="hero rise"><div class="big">🏝️</div><div><h1>歡迎回來，${S.avatar} ${esc(S.name||"小冒險家")}！</h1><p>選一座年級島，闖過每個科目世界，打敗魔王收集星星！</p></div>
     <div class="acts"><button class="btn-ghost" onclick="openPractice()">🎯 自由練習</button><button class="btn-ghost" onclick="openWrongs()">📒 錯題本${S.wrongs.length?`（${S.wrongs.length}）`:""}</button><button class="btn-ghost" onclick="openAch()">🏅 成就 ${S.ach.length}/${ACHIEVEMENTS.length}</button></div></div>
   ${LG?`<button class="cont rise" onclick="grade(${LG.g})"><span class="e">${LG.emo}</span><span>▶ 繼續冒險：${LG.name}・${LG.place}<small>上次玩到這裡</small></span></button>`:""}
   ${missionHTML()}
@@ -326,7 +354,8 @@ function openAch(){modal(`<h2>🏅 成就 <span class="muted" style="font-size:1
   <div class="ach">${ACHIEVEMENTS.map(a=>`<div class="ac ${S.ach.includes(a.k)?"on":""}"><span class="e">${S.ach.includes(a.k)?a.e:"🔒"}</span><div><b>${a.n}</b><small>${a.d}</small></div></div>`).join("")}</div>`)}
 function openProfile(){
   const acc=S.played?Math.round(S.right/Math.max(1,Object.values(S.stats).reduce((a,b)=>a+b.p,0))*100):0;
-  modal(`<h2>${S.avatar} 我的冒險檔案</h2>
+  modal(`<h2>${S.avatar} ${esc(S.name||"")} 的冒險檔案</h2>
+  <div class="row" style="margin-bottom:10px"><input id="pfName" maxlength="10" value="${esc(S.name||"")}" style="border:2px solid var(--line);border-radius:10px;padding:8px 12px;font-size:15px;font-family:inherit"><button class="btn-ghost btn-sm" onclick="renameProfile()">✏️ 改名字</button><button class="btn-ghost btn-sm" onclick="openSwitch()">🔁 切換小朋友</button></div>
   <div class="grid g2"><div class="card"><b style="font-size:26px">⭐ ${S.star}</b><br><small class="muted">收集星星</small></div><div class="card"><b style="font-size:26px">🪙 ${S.coin}</b><br><small class="muted">目前金幣</small></div>
   <div class="card"><b style="font-size:26px">🔥 ${S.streak}</b><br><small class="muted">連續天數</small></div><div class="card"><b style="font-size:26px">${acc}%</b><br><small class="muted">闖關正確率</small></div></div>
   <p>完成關卡 <b>${S.played}</b> 次・累積答對 <b>${S.right}</b> 題・卡片 <b>${S.cards.length}</b>/${CARDS.length}・成就 <b>${S.ach.length}</b>/${ACHIEVEMENTS.length}・最高連擊 <b>${S.best.combo}</b></p>
@@ -350,10 +379,11 @@ function openParents(focus){
    <li>金幣只能在站內抽卡、買道具、角色與主題，不涉及任何付費。數學題目依年級隨機產生。</li>
    <li>紀錄只存在這台裝置的瀏覽器，不會上傳。建議答錯時陪孩子看 💡 解說，並用「錯題本」複習。</li></ul></details>`);
 }
-function resetAll(){modal(`<h2>🔄 重設進度</h2><p>確定要清除所有進度、金幣、卡片、角色與成就嗎？</p><button class="btn-pri" onclick="doReset()">確定清除</button>`)}
-function doReset(){S=FRESH();S.daily.d=today();save();closeModal();hud();home()}
+function resetAll(){const p=curProfile();if(!p)return;modal(`<h2>🔄 重設 ${p.avatar} ${esc(p.name)} 的進度</h2><p>確定要清除這位小朋友的所有進度、金幣、卡片與成就嗎？（其他小朋友不受影響）</p>
+  <div class="row"><button class="btn-pri" onclick="doReset()">確定清除進度</button><button class="btn-ghost" style="color:var(--bad)" onclick="deleteProfile('${p.id}')">🗑️ 刪除這位小朋友</button></div>`)}
+function doReset(){const p=curProfile();S=FRESH();S.name=p.name;S.avatar=p.avatar;S.daily.d=today();save();closeModal();hud();home()}
 
 /* ---------- 啟動 ---------- */
-hud();
-(function route(){const m=location.hash.match(/^#g(\d)(?:-(\w+))?$/);if(m&&m[2]&&SUBJECTS[m[2]])world(+m[1],m[2]);else if(m)grade(+m[1]);else home()})();
-window.addEventListener("hashchange",()=>{if(Q)return;const m=location.hash.match(/^#g(\d)(?:-(\w+))?$/);if(m&&m[2]&&SUBJECTS[m[2]])world(+m[1],m[2]);else if(m)grade(+m[1]);else if(!location.hash)home()});
+function route(){const m=location.hash.match(/^#g(\d)(?:-(\w+))?$/);if(m&&m[2]&&SUBJECTS[m[2]])world(+m[1],m[2]);else if(m)grade(+m[1]);else home()}
+if(PF.current&&loadProfile(PF.current)){hud();route()}else{PF.current="";hud();loginScreen()}
+window.addEventListener("hashchange",()=>{if(Q||!PF.current)return;const m=location.hash.match(/^#g(\d)(?:-(\w+))?$/);if(m&&m[2]&&SUBJECTS[m[2]])world(+m[1],m[2]);else if(m)grade(+m[1]);else if(!location.hash)home()});
