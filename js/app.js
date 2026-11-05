@@ -24,10 +24,10 @@ function normalize(S){
 }
 function curProfile(){return PF.list.find(p=>p.id===PF.current)}
 function loadProfile(id){const p=PF.list.find(x=>x.id===id);if(!p)return false;PF.current=id;lsSet(PKEY,PF);S=normalize(Object.assign(FRESH(),lsGet(KEY+"_"+id)||{}));S.avatar=p.avatar;S.name=p.name;return true}
-const save=()=>{const p=curProfile();if(!p)return;p.avatar=S.avatar;lsSet(PKEY,PF);lsSet(KEY+"_"+p.id,S)};
+const save=()=>{const p=curProfile();if(!p)return;p.avatar=S.avatar;S._t=Date.now();lsSet(PKEY,PF);lsSet(KEY+"_"+p.id,S);SYNC.schedule()};
 function profileStars(id){const d=lsGet(KEY+"_"+id);return d?(d.star||0):0}
 function addProfile(name,avatar){name=(name||"").trim().slice(0,10);if(!name){toast("請先輸入名字");return}if(PF.list.length>=8){toast("最多 8 位小朋友");return}const id="p"+Date.now();PF.list.push({id,name,avatar,created:today()});lsSet(PKEY,PF);loadProfile(id);save();hud();sfx("win");confetti(60);toast(`歡迎 ${avatar} ${name}！`);home()}
-function deleteProfile(id){PF.list=PF.list.filter(p=>p.id!==id);localStorage.removeItem(KEY+"_"+id);if(PF.current===id)PF.current="";lsSet(PKEY,PF);closeModal();if(!PF.current)loginScreen();else home()}
+function deleteProfile(id){PF.list=PF.list.filter(p=>p.id!==id);localStorage.removeItem(KEY+"_"+id);SYNC.remove(id).catch(()=>{});if(PF.current===id)PF.current="";lsSet(PKEY,PF);closeModal();if(!PF.current)loginScreen();else home()}
 function renameProfile(){const n=($("pfName").value||"").trim().slice(0,10);if(!n){toast("名字不能空白");return}const p=curProfile();p.name=n;S.name=n;save();hud();closeModal();toast("已改名為 "+n);home()}
 let loginAv="🧒";
 function loginScreen(){
@@ -38,7 +38,8 @@ function loginScreen(){
       <div class="pf new"><span class="e" id="loginAv">${loginAv}</span><input id="newName" maxlength="10" placeholder="輸入名字" onkeydown="if(event.key==='Enter')addProfile(this.value,loginAv)">
         <div class="avpick">${avs.map(a=>`<button class="${a===loginAv?"on":""}" onclick="loginAv='${a}';[...this.parentElement.children].forEach(b=>b.classList.remove('on'));this.classList.add('on');$('loginAv').textContent='${a}'">${a}</button>`).join("")}</div>
         <button class="btn-pri" onclick="addProfile($('newName').value,loginAv)">➕ 新增小朋友</button></div></div>
-    <p class="muted" style="font-size:12px;margin-top:16px">資料只存在這台裝置的瀏覽器裡。若要在別台裝置玩，需重新建立。</p></div>`;
+    ${SYNC.enabled()?`<div class="syncbar"><span>${SYNC.family()?`☁️ 家庭同步已開啟（${SYNC.family()}）${SYNC.status==="error"?" ⚠️ 連線失敗":""}`:"☁️ 想在手機、平板上也看到同樣的進度？"}</span><button class="btn-ghost btn-sm" onclick="openSync()">${SYNC.family()?"管理同步":"設定家庭同步"}</button></div>`
+      :`<p class="muted" style="font-size:12px;margin-top:16px">資料只存在這台裝置的瀏覽器裡。</p>`}</div>`;
   document.querySelector(".brand small").textContent="國小全科闖關";
 }
 function openSwitch(){modal(`<h2>🔁 切換小朋友</h2><div class="pfs small">${PF.list.map(p=>`<button class="pf ${p.id===PF.current?"on":""}" onclick="closeModal();loadProfile('${p.id}');hud();home();sfx('coin')"><span class="e">${p.avatar}</span><b>${esc(p.name)}</b><small>⭐ ${profileStars(p.id)}</small></button>`).join("")}</div>
@@ -355,7 +356,7 @@ function openAch(){modal(`<h2>🏅 成就 <span class="muted" style="font-size:1
 function openProfile(){
   const acc=S.played?Math.round(S.right/Math.max(1,Object.values(S.stats).reduce((a,b)=>a+b.p,0))*100):0;
   modal(`<h2>${S.avatar} ${esc(S.name||"")} 的冒險檔案</h2>
-  <div class="row" style="margin-bottom:10px"><input id="pfName" maxlength="10" value="${esc(S.name||"")}" style="border:2px solid var(--line);border-radius:10px;padding:8px 12px;font-size:15px;font-family:inherit"><button class="btn-ghost btn-sm" onclick="renameProfile()">✏️ 改名字</button><button class="btn-ghost btn-sm" onclick="openSwitch()">🔁 切換小朋友</button></div>
+  <div class="row" style="margin-bottom:10px"><input id="pfName" maxlength="10" value="${esc(S.name||"")}" style="border:2px solid var(--line);border-radius:10px;padding:8px 12px;font-size:15px;font-family:inherit"><button class="btn-ghost btn-sm" onclick="renameProfile()">✏️ 改名字</button><button class="btn-ghost btn-sm" onclick="openSwitch()">🔁 切換小朋友</button>${SYNC.enabled()?`<button class="btn-ghost btn-sm" onclick="openSync()">☁️ 家庭同步</button>`:""}</div>
   <div class="grid g2"><div class="card"><b style="font-size:26px">⭐ ${S.star}</b><br><small class="muted">收集星星</small></div><div class="card"><b style="font-size:26px">🪙 ${S.coin}</b><br><small class="muted">目前金幣</small></div>
   <div class="card"><b style="font-size:26px">🔥 ${S.streak}</b><br><small class="muted">連續天數</small></div><div class="card"><b style="font-size:26px">${acc}%</b><br><small class="muted">闖關正確率</small></div></div>
   <p>完成關卡 <b>${S.played}</b> 次・累積答對 <b>${S.right}</b> 題・卡片 <b>${S.cards.length}</b>/${CARDS.length}・成就 <b>${S.ach.length}</b>/${ACHIEVEMENTS.length}・最高連擊 <b>${S.best.combo}</b></p>
@@ -385,5 +386,9 @@ function doReset(){const p=curProfile();S=FRESH();S.name=p.name;S.avatar=p.avata
 
 /* ---------- 啟動 ---------- */
 function route(){const m=location.hash.match(/^#g(\d)(?:-(\w+))?$/);if(m&&m[2]&&SUBJECTS[m[2]])world(+m[1],m[2]);else if(m)grade(+m[1]);else home()}
-if(PF.current&&loadProfile(PF.current)){hud();route()}else{PF.current="";hud();loginScreen()}
+(async()=>{
+  if(SYNC.enabled()&&SYNC.family()){app.innerHTML=`<p class="center" style="margin-top:60px;font-size:20px">☁️ 正在同步家庭資料…</p>`;await SYNC.syncDown()}
+  if(PF.current&&loadProfile(PF.current)){hud();route()}else{PF.current="";hud();loginScreen()}
+  updateSyncBadge();
+})();
 window.addEventListener("hashchange",()=>{if(Q||!PF.current)return;const m=location.hash.match(/^#g(\d)(?:-(\w+))?$/);if(m&&m[2]&&SUBJECTS[m[2]])world(+m[1],m[2]);else if(m)grade(+m[1]);else if(!location.hash)home()});
