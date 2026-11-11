@@ -259,3 +259,17 @@ footer .fine{margin-top:6px;font-size:12px}
   .brand .logo{font-size:17px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+/* 教材設定・我的課本 */
+.booktag{background:rgba(255,255,255,.75);border-radius:12px;padding:8px 12px;margin:0 0 12px;font-size:14px;font-weight:600}
+.booktag a,.mybook a{color:var(--pri-d);cursor:pointer;text-decoration:underline;font-weight:800}
+.mybook{background:#fff;border-radius:20px;padding:14px 16px;margin:14px 0;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.mybook .mh{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;margin-bottom:10px}
+.mybook .mh b{font-size:18px}.mybook .mh small{color:#777}.mybook .mh a{margin-left:auto}
+.mbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.mb{border:2px solid color-mix(in srgb,var(--sc) 35%,transparent);background:color-mix(in srgb,var(--sc) 9%,#fff);border-radius:16px;padding:10px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;color:inherit;transition:transform .15s}
+.mb:hover{transform:translateY(-3px)}.mb .e{font-size:28px}.mb b{font-size:15px}.mb small{font-size:11px;color:#666}.mb i{font-style:normal;font-size:12px}
+.mb.hot{border-color:var(--sc);box-shadow:0 0 0 3px color-mix(in srgb,var(--sc) 20%,transparent)}
+.cfgt td{vertical-align:middle;font-size:14px}.cfgt select{border:2px solid var(--line);border-radius:10px;padding:6px 8px;font-size:14px;font-family:inherit;background:#fff;max-width:170px}
+.glink{cursor:pointer;padding:0 4px;border-radius:6px}.glink.on{background:var(--pri);color:#fff;font-weight:900}
+body.dark .mybook{background:#1f2440}body.dark .mb{background:#262c4d}body.dark .mb small,body.dark .mybook .mh small{color:#aab}body.dark .booktag{background:rgba(0,0,0,.25)}
