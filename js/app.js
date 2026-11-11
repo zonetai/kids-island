@@ -6,7 +6,8 @@ const QPER=5, BOSS_N=8, DAILY_GOAL=3, DAILY_REWARD=30, DRAW_COST=20;
 const today=(o=0)=>new Date(Date.now()-o*864e5).toLocaleDateString("sv");
 const FRESH=()=>({v:3,coin:0,star:0,streak:0,last:"",prog:{},cards:[],sound:true,music:false,avatar:"🧒",owned:["🧒","👧"],theme:"sun",themes:["sun"],
   items:{potion:0,shield:0,hint:0},lastGrade:0,daily:{d:"",n:0,claimed:false},wrongs:[],played:0,right:0,stats:{},seen:{},ach:[],
-  best:{combo:0,coins:0,daily:0,practice:0},notesRead:{},pendingShield:"",history:{}});
+  best:{combo:0,coins:0,daily:0,practice:0},notesRead:{},pendingShield:"",history:{},
+  cfg:{g:0,school:"敦化國小",sem:"",ver:{},types:[]},tagStat:{},slow:false});
 /* ---------- 多人檔案 ---------- */
 const PKEY="kidsIsland_profiles";
 const lsGet=(k)=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}};
@@ -20,13 +21,14 @@ function normalize(S){
   for(const k in S.prog){const p=S.prog[k];if(Array.isArray(p))S.prog[k]={c:[p[0]||0,p[1]||0],boss:p[2]||0,full:false}}
   S.items=Object.assign({potion:0,shield:0,hint:0},S.items||{});S.best=Object.assign({combo:0,coins:0,daily:0,practice:0},S.best||{});
   if(!S.daily||S.daily.d!==today())S.daily={d:today(),n:0,claimed:false};
+  S.cfg=Object.assign({g:0,school:"敦化國小",sem:"",ver:{},types:[]},S.cfg||{});S.tagStat=S.tagStat||{};
   return S;
 }
 function curProfile(){return PF.list.find(p=>p.id===PF.current)}
 function loadProfile(id){const p=PF.list.find(x=>x.id===id);if(!p)return false;PF.current=id;lsSet(PKEY,PF);S=normalize(Object.assign(FRESH(),lsGet(KEY+"_"+id)||{}));S.avatar=p.avatar;S.name=p.name;return true}
 const save=()=>{const p=curProfile();if(!p)return;p.avatar=S.avatar;S._t=Date.now();lsSet(PKEY,PF);lsSet(KEY+"_"+p.id,S);SYNC.schedule()};
 function profileStars(id){const d=lsGet(KEY+"_"+id);return d?(d.star||0):0}
-function addProfile(name,avatar){name=(name||"").trim().slice(0,10);if(!name){toast("請先輸入名字");return}if(PF.list.length>=8){toast("最多 8 位小朋友");return}const id="p"+Date.now();PF.list.push({id,name,avatar,created:today()});lsSet(PKEY,PF);loadProfile(id);save();hud();sfx("win");confetti(60);toast(`歡迎 ${avatar} ${name}！`);home()}
+function addProfile(name,avatar){name=(name||"").trim().slice(0,10);if(!name){toast("請先輸入名字");return}if(PF.list.length>=8){toast("最多 8 位小朋友");return}const id="p"+Date.now();PF.list.push({id,name,avatar,created:today()});lsSet(PKEY,PF);loadProfile(id);save();hud();sfx("win");confetti(60);toast(`歡迎 ${avatar} ${name}！`);home();openCfg(0,true)}
 function deleteProfile(id){PF.list=PF.list.filter(p=>p.id!==id);localStorage.removeItem(KEY+"_"+id);SYNC.remove(id).catch(()=>{});if(PF.current===id)PF.current="";lsSet(PKEY,PF);closeModal();if(!PF.current)loginScreen();else home()}
 function renameProfile(){const n=($("pfName").value||"").trim().slice(0,10);if(!n){toast("名字不能空白");return}const p=curProfile();p.name=n;S.name=n;save();hud();closeModal();toast("已改名為 "+n);home()}
 let loginAv="🧒";
@@ -51,29 +53,62 @@ const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=R(0,i);[a[i],a[
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
 /* ---------- 章節 / 進度 ---------- */
+/* ---------- 教材版本 ---------- */
+const UNIT_BY_ID={},NOTE_T={};
+for(const k in CUR)for(const u of CUR[k]){UNIT_BY_ID[u.id]=u;NOTES[u.id]=u.note;NOTE_T[u.id]=u.n}
+for(const c of ENG_CH)NOTE_T[c.k]=c.n;
+const schoolVer=(g,s)=>((SCHOOLS[S.cfg.school]||{})[g]||{})[s]||"";
+const dataVer=(g,s)=>((SCHOOLS["敦化國小"]||{})[g]||{})[s]||"";
+const cfgVer=(g,s)=>S.cfg.ver[`${g}-${s}`]||schoolVer(g,s)||VERSIONS[s]&&VERSIONS[s][0]||"";
+const cfgSem=()=>S.cfg.sem||autoSem();
+function curUnits(g,s){
+  const ver=cfgVer(g,s),sem=cfgSem(),sems=sem==="全"?["上","下"]:[sem];let units=[],src="";
+  for(const se of sems){const k=`${g}-${s}-${se}`;
+    if(CUR[k]&&ver===dataVer(g,s)){units=units.concat(CUR[k].map(u=>Object.assign({},u,{sem:se})));src="school"}
+    else if(CUR_ALT[k]&&CUR_ALT[k][ver]){units=units.concat(CUR_ALT[k][ver].map((a,i)=>({id:`alt-${k}-${ver}-${i}`,n:a.n,sem:se,parts:a.use.map(id=>UNIT_BY_ID[id]).filter(Boolean)})).filter(u=>u.parts.length));src=src||"alt"}}
+  return {units,ver,sem,src};
+}
+const curAvail=(g,s,ver)=>["上","下"].some(se=>(CUR[`${g}-${s}-${se}`]&&ver===dataVer(g,s))||(CUR_ALT[`${g}-${s}-${se}`]&&CUR_ALT[`${g}-${s}-${se}`][ver]));
+function progKey(g,s){if(s==="engx")return `${g}-engx`;const cu=curUnits(g,s);return cu.units.length?`${g}-${s}-${cu.ver}-${cu.sem}`:pk(g,s)}
 function chapters(g,s){
+  if(s==="engx")return engChapters(g).map(c=>({name:c.n,tag:c.k,gen:c.f,free:true}));
+  const cu=curUnits(g,s);
+  if(cu.units.length)return cu.units.map(u=>({name:(cu.sem==="全"?u.sem+"・":"")+u.n,tag:u.parts?(u.parts[0]||{}).id:u.id,unit:u,free:true}));
   if(s==="math")return MATH_CH_NAME[g].map((n,i)=>({name:n,tag:MATH_CH[g][i],t:i}));
   const tags=[];for(const q of BANK[s][g])if(!tags.includes(q[3]))tags.push(q[3]);
   const ch=tags.map(t=>({name:t,tag:t}));
   if(s==="english")ch.push({name:"聽力",tag:"聽力",listen:true});
   return ch;
 }
-function prog(g,s){const k=pk(g,s);if(!S.prog[k])S.prog[k]={c:[],boss:0,full:false};const p=S.prog[k];const n=chapters(g,s).length;while(p.c.length<n)p.c.push(0);return p}
+function prog(g,s){const k=progKey(g,s);if(!S.prog[k])S.prog[k]={c:[],boss:0,full:false};const p=S.prog[k];const n=chapters(g,s).length;while(p.c.length<n)p.c.push(0);return p}
 const chStars=(g,s,i)=>prog(g,s).c[i]||0;
 const bossStars=(g,s)=>prog(g,s).boss||0;
 const subjStars=(g,s)=>{const p=prog(g,s);return p.c.reduce((a,b)=>a+b,0)+p.boss};
 const subjMax=(g,s)=>(chapters(g,s).length+1)*3;
-const chUnlocked=(g,s,i)=>i===0||chStars(g,s,i-1)>0;
-const bossUnlocked=(g,s)=>prog(g,s).c.every(x=>x>0);
+const chUnlocked=(g,s,i)=>{const ch=chapters(g,s);return i===0||(ch[i]&&ch[i].free)||chStars(g,s,i-1)>0};
+const bossUnlocked=(g,s)=>{const ch=chapters(g,s),c=prog(g,s).c.slice(0,ch.length);return ch.some(x=>x.free)?c.filter(x=>x>0).length>=Math.min(3,ch.length):c.every(x=>x>0)};
 const gradeStars=g=>SUBJ_BY_GRADE(g).reduce((n,s)=>n+subjStars(g,s),0);
 const gradeMax=g=>SUBJ_BY_GRADE(g).reduce((n,s)=>n+subjMax(g,s),0);
 
 /* ---------- 出題 ---------- */
 function listenPool(g){const w=[];for(const q of BANK.english[g]){const a=q[1][0];if(/^[a-z]{3,}$/i.test(a)&&!w.includes(a))w.push(a)}return w}
 function listenQ(g,word){const pool=listenPool(g).filter(x=>x!==word);const d=shuffle(pool).slice(0,3);while(d.length<3)d.push(["cat","dog","sun","red"][d.length]);return ["🔊 仔細聽，你聽到哪一個字？",[word,...d],`聽到的是「${word}」`, "聽力", word]}
+const typeOk=t=>!S.cfg.types.length||!t||S.cfg.types.includes(t);
+function unitQs(u,k,hard){
+  if(u.parts){const out=[];for(let i=0;i<k;i++)out.push(...unitQs(u.parts[i%u.parts.length],1,hard));return out}
+  if(u.gen){return Array.from({length:k},()=>{let q,t=0;do{q=u.gen(hard)}while(!typeOk(q[3])&&++t<15);return [q[0],q[1],q[2],u.n,undefined,undefined,q[3]]})}
+  let pool=u.qs.filter(q=>typeOk(q[3]));if(pool.length<Math.min(k,3))pool=u.qs;
+  const out=shuffle(pool).slice(0,k);while(out.length<k)out.push(pool[R(0,pool.length-1)]);
+  return out.map(q=>[q[0],q[1],q[2],u.n,q[4],undefined,q[3]]);
+}
+function weakChapters(g){const ch=chapters(g,"engx");const sc=c=>{const t=S.tagStat["engx:"+c.tag];return t&&t.p?t.r/t.p:0.6};return [...ch].sort((a,b)=>sc(a)-sc(b)).slice(0,3)}
 function buildQs(g,s,ch,n,hard){
   let qs=[];
-  if(s==="math"){const ts=ch?[ch.t]:[0,1,2];qs=Array.from({length:n},(_,i)=>mathQ(g,ts[i%ts.length],hard))}
+  if(s==="engx"){const list=ch&&ch.weak?weakChapters(g):ch?[ch]:chapters(g,s);
+    qs=Array.from({length:n},(_,i)=>{const c=list[ch?i%list.length:R(0,list.length-1)];const q=c.gen(g);return [q[0],q[1],q[2],c.name,q[4],q[5],c.tag.startsWith("L")?"聽力":"文法",c.tag]})}
+  else if(ch&&ch.unit)qs=unitQs(ch.unit,n,hard);
+  else if(!ch&&chapters(g,s)[0]&&chapters(g,s)[0].unit){const us=chapters(g,s).map(c=>c.unit);qs=Array.from({length:n},()=>unitQs(us[R(0,us.length-1)],1,hard)[0])}
+  else if(s==="math"){const ts=ch?[ch.t]:[0,1,2];qs=Array.from({length:n},(_,i)=>mathQ(g,ts[i%ts.length],hard))}
   else if(ch&&ch.listen){const w=shuffle(listenPool(g));qs=Array.from({length:n},(_,i)=>listenQ(g,w[i%w.length]))}
   else{
     let pool=BANK[s][g];
@@ -82,7 +117,7 @@ function buildQs(g,s,ch,n,hard){
     if(!ch&&s==="english"){const w=shuffle(listenPool(g));qs=qs.slice(0,n-2).concat([listenQ(g,w[0]),listenQ(g,w[1])])}
     while(qs.length<n)qs.push(pool[R(0,pool.length-1)]);
   }
-  return shuffle(qs).map(([q,o,e,tag,lw])=>({q,ans:o[0],opts:shuffle(o),e,tag,lw}));
+  return shuffle(qs).map(([q,o,e,tag,lw,full,type,key])=>({q,ans:o[0],opts:shuffle(o),e,tag,lw,full,type,key:key||tag}));
 }
 
 /* ---------- HUD / 音效 / 特效 ---------- */
@@ -107,7 +142,12 @@ function startMusic(){try{ac=ac||new AudioContext();if(ac.state==="suspended")ac
 function stopMusic(){if(musTimer){clearInterval(musTimer);musTimer=null}}
 function toggleSound(){S.sound=!S.sound;save();hud();if(S.sound)sfx("ok")}
 function toggleFull(){try{if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen()}catch(e){toast("此裝置不支援全螢幕")}}
-function say(text,lang="en-US"){if(!("speechSynthesis" in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=.85;speechSynthesis.speak(u)}catch(e){}}
+function say(text,lang="en-US"){if(!("speechSynthesis" in window)||!text)return;try{speechSynthesis.cancel();
+  const lines=String(text).split("|").map(x=>x.trim()).filter(Boolean),vs=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));
+  lines.forEach((t,i)=>{const u=new SpeechSynthesisUtterance(t);u.lang=lang;u.rate=S.slow?.6:.85;if(lines.length>1){u.pitch=i%2?.75:1.3;if(vs.length>1)u.voice=vs[i%2?1:0]}speechSynthesis.speak(u)})}catch(e){}}
+function sayCur(){if(Q&&Q.qs[Q.i])say(Q.qs[Q.i].lw)}
+function toggleSlow(){S.slow=!S.slow;save();const b=$("slowBtn");if(b)b.textContent=S.slow?"🐢 慢速":"🐇 正常";sayCur()}
+if("speechSynthesis" in window)try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}catch(e){}
 function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
 function confetti(n=90){const cols=["#ff8a3d","#ffc861","#3bb273","#4fb3ff","#e5484d","#b388ff"];for(let i=0;i<n;i++){const d=document.createElement("i");d.className="cf";d.style.cssText=`left:${Math.random()*100}vw;background:${cols[i%6]};animation-duration:${1.8+Math.random()*1.6}s;animation-delay:${Math.random()*.7}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(d);setTimeout(()=>d.remove(),4000)}}
 function addCoins(n){S.coin+=n;S.best.coins+=n;bump("sCoin")}
@@ -128,13 +168,14 @@ function home(){
   Q=null;location.hash="";
   const LG=GRADES[S.lastGrade-1];
   app.innerHTML=`<div class="hero rise"><div class="big">🏝️</div><div><h1>歡迎回來，${S.avatar} ${esc(S.name||"小冒險家")}！</h1><p>選一座年級島，闖過每個科目世界，打敗魔王收集星星！</p></div>
-    <div class="acts"><button class="btn-ghost" onclick="openPractice()">🎯 自由練習</button><button class="btn-ghost" onclick="openWrongs()">📒 錯題本${S.wrongs.length?`（${S.wrongs.length}）`:""}</button><button class="btn-ghost" onclick="openAch()">🏅 成就 ${S.ach.length}/${ACHIEVEMENTS.length}</button></div></div>
+    <div class="acts"><button class="btn-ghost" onclick="openPractice()">🎯 自由練習</button><button class="btn-ghost" onclick="openWrongs()">📒 錯題本${S.wrongs.length?`（${S.wrongs.length}）`:""}</button><button class="btn-ghost" onclick="openAch()">🏅 成就 ${S.ach.length}/${ACHIEVEMENTS.length}</button><button class="btn-ghost" onclick="openCfg()">📚 教材設定</button></div></div>
+  ${myBookHTML()}
   ${LG?`<button class="cont rise" onclick="grade(${LG.g})"><span class="e">${LG.emo}</span><span>▶ 繼續冒險：${LG.name}・${LG.place}<small>上次玩到這裡</small></span></button>`:""}
   ${missionHTML()}
   <div class="grid g3">${GRADES.map((G,i)=>{
     const subs=SUBJ_BY_GRADE(G.g),tot=gradeMax(G.g),got=gradeStars(G.g),full=got===tot;
     return `<button class="card grade-card rise ${full?"done":""}" style="--gc:${G.color};animation-delay:${i*.06}s" onclick="grade(${G.g})">
-      ${full?`<span class="ribbon">全部通關</span>`:""}
+      ${full?`<span class="ribbon">全部通關</span>`:S.cfg.g===G.g?`<span class="ribbon" style="background:var(--pri)">我的年級</span>`:""}
       <div class="big">${G.emo}</div><h3>${G.name}・${G.place}</h3><p>⭐ ${got} / ${tot}</p>
       <div class="prog" style="margin-top:6px"><i style="width:${got/tot*100}%"></i></div>
       <div class="tags">${subs.map(s=>`<span class="tag">${SUBJECTS[s].emo} ${SUBJECTS[s].name}</span>`).join("")}</div></button>`}).join("")}</div>`;
@@ -165,15 +206,16 @@ function world(g,s){
   app.innerHTML=`<button class="back" onclick="grade(${g})">⬅ ${G.name}</button>
   <div class="world" style="--wbg:${X.bg};--accent:${X.color}">
     <div class="whead"><div class="npc">${X.npc}</div><div><h1>${X.emo} ${X.world}</h1><p>${G.name}${X.name}・${X.npcName}陪你闖關　★ ${subjStars(g,s)}/${subjMax(g,s)}</p></div>
-      <div class="acts"><button class="btn-ghost btn-sm" onclick="showStory(SUBJECTS['${s}'])">💬 故事</button><button class="btn-ghost btn-sm" onclick="openPractice(${g},'${s}')">🎯 練習</button><button class="btn-ghost btn-sm" onclick="openParents('${g}-${s}')">👪 家長</button></div></div>
+      <div class="acts">${s==="engx"?`<button class="btn-pri btn-sm" onclick="play(${g},'engx','weak')">🎯 弱點加強</button>`:`<button class="btn-ghost btn-sm" onclick="openCfg(${g})">📚 教材</button>`}<button class="btn-ghost btn-sm" onclick="showStory(SUBJECTS['${s}'])">💬 故事</button><button class="btn-ghost btn-sm" onclick="openPractice(${g},'${s}')">🎯 練習</button><button class="btn-ghost btn-sm" onclick="openParents('${g}-${s}')">👪 家長</button></div></div>
+    ${bookLine(g,s)}
     <div class="trail">
       <div class="node start"><div class="orb">🚩</div><div class="info"><h4>出發點</h4><p>${X.story[1]}</p><button class="btn-ghost btn-sm" onclick="showStory(SUBJECTS['${s}'])">💬 聽${X.npcName}說</button></div></div>
       ${ch.map((c,i)=>{const st=chStars(g,s,i),un=chUnlocked(g,s,i),k=`${g}-${s}-${i}`,read=S.notesRead[k];
         return `<div class="node ${un?"":"lock"} ${i===nextI?"next":""} ${st===3?"done":""}"><div class="orb">${un?(st===3?"🏆":c.listen?"🎧":"📘"):"🔒"}<span class="num">${i+1}</span><span class="st">${"★".repeat(st)}${"☆".repeat(3-st)}</span></div>
-        <div class="info"><h4>${c.name}${c.listen?" <span class='tag'>聽發音選字</span>":""}</h4><p>${un?`${QPER} 題・3 顆愛心${read?"・📖 已讀攻略":""}`:"先在上一關拿到 1 顆星"}</p>
+        <div class="info"><h4>${c.name}${c.listen?" <span class='tag'>聽發音選字</span>":""}</h4><p>${un?`${QPER} 題・3 顆愛心${read?"・📖 已讀攻略":""}${s==="engx"?accTag("engx:"+c.tag):""}`:"先在上一關拿到 1 顆星"}</p>
         <div class="row"><button class="btn-ghost btn-sm" onclick="openNotes('${s}','${c.tag}','${k}')">📖 攻略本</button><button class="btn-pri btn-sm" ${un?"":"disabled"} onclick="play(${g},'${s}',${i})">${st?"再挑戰":"▶ 開始"}</button></div></div></div>`}).join("")}
       <div class="node boss ${bossUnlocked(g,s)?"":"lock"} ${bossNext?"next":""}"><div class="orb">${bossUnlocked(g,s)?(bossStars(g,s)?"🏰":"👾"):"🔒"}<span class="st">${"★".repeat(bossStars(g,s))}${"☆".repeat(3-bossStars(g,s))}</span></div>
-        <div class="info"><h4>👑 魔王城</h4><p>${bossUnlocked(g,s)?`${BOSS_N} 題混合挑戰，金幣加倍！`:"所有關卡都拿到星星才能挑戰"}</p><button class="btn-pri boss btn-sm" ${bossUnlocked(g,s)?"":"disabled"} onclick="play(${g},'${s}','boss')">${bossStars(g,s)?"再戰魔王":"⚔️ 挑戰魔王"}</button></div></div>
+        <div class="info"><h4>👑 魔王城</h4><p>${bossUnlocked(g,s)?`${BOSS_N} 題混合挑戰，金幣加倍！`:ch.some(c=>c.free)?"任選 3 關拿到星星就能挑戰":"所有關卡都拿到星星才能挑戰"}</p><button class="btn-pri boss btn-sm" ${bossUnlocked(g,s)?"":"disabled"} onclick="play(${g},'${s}','boss')">${bossStars(g,s)?"再戰魔王":"⚔️ 挑戰魔王"}</button></div></div>
     </div></div>`;
 }
 function showStory(X,after){
@@ -185,7 +227,7 @@ function showStory(X,after){
 function openNotes(s,tag,k){
   const n=NOTES[tag]||"這個單元的重點就在題目的解說裡，答錯時記得仔細看喔！";
   const first=k&&!S.notesRead[k];
-  modal(`<h2>📖 攻略本・${tag}</h2><div style="background:#fff6dd;border-radius:14px;padding:14px;font-size:16px;line-height:1.7">${n}</div>
+  modal(`<h2>📖 攻略本・${NOTE_T[tag]||tag}</h2><div style="background:#fff6dd;border-radius:14px;padding:14px;font-size:16px;line-height:1.7">${n}</div>
     ${k?`<p class="muted" style="font-size:13px">${first?"🛡️ 第一次讀完攻略本，下一次挑戰這關會獲得一個護盾（答錯一次不扣愛心）！":"你已經讀過這一關的攻略本了。多讀幾次也不錯！"}</p>`:""}`);
   if(first){S.notesRead[k]=true;S.pendingShield=k;save()}
 }
@@ -193,10 +235,10 @@ function openNotes(s,tag,k){
 /* ---------- 闖關 ---------- */
 let Q=null;
 function play(g,s,ci,practice){
-  const ch=chapters(g,s),boss=ci==="boss",c=boss?null:ch[ci];
+  const ch=chapters(g,s),boss=ci==="boss",weak=ci==="weak",c=boss?null:weak?{weak:true,name:"🎯 弱點加強"}:ch[ci]||null;
   const n=practice?999:boss?BOSS_N:QPER;
   const qs=practice?buildQs(g,s,c,12,false):buildQs(g,s,c,n,boss);
-  Q={g,s,ci,boss,c,n:practice?qs.length:n,qs,i:0,right:0,hearts:3,combo:0,maxCombo:0,bonus:0,wrong:[],shield:false,practice:!!practice,pr:0,pn:0};
+  Q={g,s,ci,boss,weak,c,n:practice?qs.length:n,qs,i:0,right:0,hearts:3,combo:0,maxCombo:0,bonus:0,wrong:[],shield:false,practice:!!practice,pr:0,pn:0};
   const k=`${g}-${s}-${ci}`;
   if(!practice&&S.pendingShield===k){Q.shield=true;S.pendingShield="";save();toast("🛡️ 攻略本護盾啟動！")}
   sfx(boss?"boss":"coin");
@@ -206,8 +248,8 @@ function ask(){
   const X=SUBJECTS[Q.s],it=Q.qs[Q.i],boss=Q.boss;
   const cheers=boss?["👾 魔王關！題目比較多，穩穩答！","魔王在看著你，別緊張～","你比魔王聰明多了！","快破關了，堅持住！","剩幾題了，衝啊！","魔王開始冒汗了！","魔王快撐不住了！","最後一擊！"]
                    :["加油！你一定可以！","仔細想一想喔～","慢慢來，不用急！","這題考驗你的觀察力！","最後衝刺！"];
-  const enOnly=Q.s==="english"&&!it.lw?(it.q.match(/[A-Za-z][A-Za-z ,'?.!_]+/g)||[]).join(" ").replace(/_+/g,"blank"):"";
-  const title=Q.practice?`自由練習・${Q.c?Q.c.name:"綜合"}`:boss?"👑 魔王城":`第 ${Q.ci+1} 關・${Q.c.name}`;
+  const enOnly=(Q.s==="english"||(Q.s==="engx"&&it.full))&&!it.lw&&it.type!=="聽力"?(it.q.match(/[A-Za-z][A-Za-z ,'?.!_]+/g)||[]).join(" ").replace(/_+/g,"blank"):"";
+  const title=Q.practice?`自由練習・${Q.c?Q.c.name:"綜合"}`:boss?"👑 魔王城":Q.weak?"🎯 弱點加強":`第 ${Q.ci+1} 關・${Q.c.name}`;
   app.innerHTML=`<div class="quiz ${boss?"boss":""}">
     <div class="qhead"><button class="back" onclick="${Q.practice?"openPractice()":`world(${Q.g},'${Q.s}')`}">⬅ 離開</button>
       <span>${X.emo} ${title}　${Q.practice?`答對 ${Q.pr}/${Q.pn}`:`${Q.i+1}/${Q.n}`}</span>
@@ -217,14 +259,14 @@ function ask(){
     <div class="npc"><div class="face">${boss?"👾":X.npc}</div><div class="bubble"><b>${boss?"魔王":X.npcName}：</b>${cheers[Q.i%cheers.length]}</div></div>
     <div class="qcard">
       ${Q.combo>=2?`<div class="combo">🔥 COMBO x${Q.combo}</div>`:""}
-      ${it.lw?`<button class="speak big" onclick="say('${it.lw}')">🔊 再聽一次</button>`:enOnly?`<button class="speak" onclick="say('${enOnly.replace(/'/g,"\\'")}')">🔊 聽發音</button>`:""}
+      ${it.lw?`<div class="row" style="justify-content:center"><button class="speak big" onclick="sayCur()">🔊 再聽一次</button><button class="speak" id="slowBtn" onclick="toggleSlow()">${S.slow?"🐢 慢速":"🐇 正常"}</button></div>`:enOnly?`<button class="speak" onclick="say(this.dataset.t)" data-t="${esc(enOnly)}">🔊 聽發音</button>`:""}
       <div class="qtext ${it.q.length>40?"small":""}">${esc(it.q)}</div>
       <div class="opts">${it.opts.map((o,k)=>`<button class="opt" data-k="${k}"><span class="k">${k+1}</span>${esc(o)}</button>`).join("")}</div>
       <div class="explain" id="ex"></div>
     </div>
     <p class="hint">💡 電腦可按數字鍵 1–4 作答，Enter 下一題</p></div>`;
   app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>pick(b));
-  if(it.lw)setTimeout(()=>say(it.lw),300);
+  if(it.lw)setTimeout(sayCur,300);
 }
 function usePotion(){if(!Q||!S.items.potion||Q.hearts>=5)return;S.items.potion--;Q.hearts++;save();sfx("coin");const h=$("hearts");if(h)h.textContent="❤️".repeat(Q.hearts)+"🤍".repeat(Math.max(0,3-Q.hearts));ask()}
 function useHint(){if(!Q||!S.items.hint)return;const it=Q.qs[Q.i];const wrong=[...app.querySelectorAll(".opt")].filter(b=>!b.disabled&&it.opts[+b.dataset.k]!==it.ans&&!b.classList.contains("gone"));if(!wrong.length)return;S.items.hint--;save();const b=wrong[R(0,wrong.length-1)];b.classList.add("gone");b.disabled=true;$("hintBtn").textContent="💡"+S.items.hint;$("hintBtn").disabled=!S.items.hint;sfx("coin")}
@@ -234,6 +276,7 @@ function pick(btn){
   let extra="";
   const st=S.stats[pk(Q.g,Q.s)]=S.stats[pk(Q.g,Q.s)]||{p:0,r:0};
   if(Q.practice){Q.pn++;if(ok){Q.pr++;S.best.practice++}}else{st.p++;if(ok)st.r++}
+  const tk=`${Q.s}:${it.key}`,ts=S.tagStat[tk]=S.tagStat[tk]||{p:0,r:0};ts.p++;if(ok)ts.r++;
   if(ok){
     Q.right++;Q.combo++;Q.maxCombo=Math.max(Q.maxCombo,Q.combo);
     if(Q.combo>=2&&!Q.practice){const b=Q.combo-1;Q.bonus+=b;extra=`<span class="bonus">+${b} 🪙 連擊！</span>`;sfx("combo")}else sfx("ok");
@@ -245,7 +288,7 @@ function pick(btn){
       else{Q.hearts--;const h=$("hearts");h.textContent="❤️".repeat(Q.hearts)+"🤍".repeat(Math.max(0,3-Q.hearts));h.classList.add("hit")}
     }
   }
-  if(Q.s==="english"&&/^[A-Za-z]/.test(it.ans))say(it.ans);
+  if(it.full)say(it.full);else if((Q.s==="english"||Q.s==="engx")&&/^[A-Za-z]/.test(it.ans)&&!it.lw)say(it.ans);
   const last=!Q.practice&&(Q.hearts<=0||Q.i===Q.n-1);
   const ex=$("ex");ex.style.display="block";
   ex.innerHTML=`${extra}${ok?"✅ 答對了！":"❌ 正確答案是「"+esc(it.ans)+"」"} ${it.e?"<br>💡 "+esc(it.e):""}
@@ -256,8 +299,8 @@ function pick(btn){
 }
 function finish(){
   const pct=Q.right/Q.n,stars=Q.hearts<=0?0:pct===1?3:pct>=.8?2:pct>=.6?1:0;
-  const p=prog(Q.g,Q.s);const old=Q.boss?p.boss:p.c[Q.ci];const gain=Math.max(0,stars-old);
-  if(Q.boss)p.boss=Math.max(p.boss,stars);else p.c[Q.ci]=Math.max(p.c[Q.ci],stars);
+  const p=prog(Q.g,Q.s);const old=Q.weak?stars:Q.boss?p.boss:p.c[Q.ci];const gain=Math.max(0,stars-old);
+  if(Q.weak){}else if(Q.boss)p.boss=Math.max(p.boss,stars);else p.c[Q.ci]=Math.max(p.c[Q.ci],stars);
   const wasFull=p.full;p.full=p.c.every(x=>x===3)&&p.boss===3;
   const bossBonus=Q.boss?Q.right*2+stars*3:0;
   const coins=Q.right*2+stars*3+Q.bonus+bossBonus;
@@ -268,7 +311,7 @@ function finish(){
   const X=SUBJECTS[Q.s];
   const msg=stars===3?(Q.boss?"你打敗魔王了！太強了！":"太厲害了！全部答對！"):stars>=1?"做得很好！再挑戰拿滿星吧！":"沒關係，每次練習都在進步！";
   const ch=chapters(Q.g,Q.s);
-  const nextCh=!Q.boss&&stars>0&&Q.ci<ch.length-1;
+  const nextCh=!Q.boss&&!Q.weak&&stars>0&&Q.ci<ch.length-1;
   const canBoss=!Q.boss&&stars>0&&bossUnlocked(Q.g,Q.s)&&!nextCh;
   const dailyDone=S.daily.n>=DAILY_GOAL&&!S.daily.claimed;
   app.innerHTML=`<div class="quiz center result card rise">
@@ -282,7 +325,7 @@ function finish(){
     ${dailyDone?`<p><button class="btn-pri" onclick="claimDaily()">🎯 今日任務完成！領取 🪙 ${DAILY_REWARD}</button></p>`:S.daily.n<DAILY_GOAL?`<p class="muted" style="font-size:14px">🎯 今日任務 ${S.daily.n}/${DAILY_GOAL}</p>`:""}
     ${Q.wrong.length?`<div class="wrongs"><b>📒 錯題回顧</b>${Q.wrong.map(w=>`<div>${esc(w.q.replace(/\n/g," "))}<br>✅ ${esc(w.a)}</div>`).join("")}</div>`:""}
     <div class="row" style="justify-content:center;margin-top:16px">
-      <button class="btn-ghost" onclick="play(${Q.g},'${Q.s}',${Q.boss?"'boss'":Q.ci})">🔁 再玩一次</button>
+      <button class="btn-ghost" onclick="play(${Q.g},'${Q.s}',${Q.boss?"'boss'":Q.weak?"'weak'":Q.ci})">🔁 再玩一次</button>
       ${nextCh?`<button class="btn-pri" onclick="play(${Q.g},'${Q.s}',${Q.ci+1})">下一關 ➜</button>`:""}
       ${canBoss?`<button class="btn-pri boss" onclick="play(${Q.g},'${Q.s}','boss')">⚔️ 挑戰魔王</button>`:""}
       <button class="btn-ghost" onclick="world(${Q.g},'${Q.s}')">🗺️ 回到地圖</button>
@@ -291,7 +334,7 @@ function finish(){
   if(stars>=2){confetti(stars===3?130:60);sfx("win")}else if(stars===1)sfx("ok");
   checkAch();
 }
-function share(r,n,st){const t=`我在「知識島探險隊」${GRADES[Q.g-1].name}${SUBJECTS[Q.s].name}${Q.boss?"魔王城":"第"+(Q.ci+1)+"關"} 答對 ${r}/${n} 題，拿到 ${"⭐".repeat(st)||"☆"}！${location.href.split("#")[0]}`;try{navigator.clipboard.writeText(t).then(()=>toast("已複製成績，貼給爸媽看吧！"),()=>toast(t))}catch(e){toast(t)}}
+function share(r,n,st){const t=`我在「知識島探險隊」${GRADES[Q.g-1].name}${SUBJECTS[Q.s].name}${Q.boss?"魔王城":Q.weak?"弱點加強":"第"+(Q.ci+1)+"關"} 答對 ${r}/${n} 題，拿到 ${"⭐".repeat(st)||"☆"}！${location.href.split("#")[0]}`;try{navigator.clipboard.writeText(t).then(()=>toast("已複製成績，貼給爸媽看吧！"),()=>toast(t))}catch(e){toast(t)}}
 
 /* ---------- 自由練習 ---------- */
 let P={g:0,s:"",ci:-1};
@@ -370,6 +413,7 @@ function openParents(focus){
   modal(`<h2>👪 家長專區</h2>
   <p><b>最近 7 天完成關卡數</b></p><div class="bars">${days.map(x=>`<div style="height:${x.n/mx*100}%" title="${x.d}：${x.n} 關"><span>${x.d.slice(5)}</span></div>`).join("")}</div><br>
   <p><b>各科學習紀錄</b></p>${rows.length?`<table class="rep"><tr><th>年級</th><th>科目</th><th>答題數</th><th>正確率</th><th>星星</th></tr>${rows.join("")}</table>`:`<p class="muted">還沒有闖關紀錄。</p>`}
+  ${engReport()}
   <p style="margin-top:12px"><b>需要加強的單元</b>（依最近錯題統計）</p>${weak.length?`<div class="chips">${weak.map(([k,n])=>`<span class="chip">${k} ×${n}</span>`).join("")}</div>`:`<p class="muted">目前沒有錯題。</p>`}
   <details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">📘 網站設計說明</summary><ul style="font-size:14px;line-height:1.7">
    <li>結構：年級島 → 科目世界 → 單元關卡（每關 5 題）→ 魔王城（8 題混合）。前一關拿到星星才解鎖下一關，全部單元有星才能挑戰魔王。</li>
@@ -383,6 +427,37 @@ function openParents(focus){
 function resetAll(){const p=curProfile();if(!p)return;modal(`<h2>🔄 重設 ${p.avatar} ${esc(p.name)} 的進度</h2><p>確定要清除這位小朋友的所有進度、金幣、卡片與成就嗎？（其他小朋友不受影響）</p>
   <div class="row"><button class="btn-pri" onclick="doReset()">確定清除進度</button><button class="btn-ghost" style="color:var(--bad)" onclick="deleteProfile('${p.id}')">🗑️ 刪除這位小朋友</button></div>`)}
 function doReset(){const p=curProfile();S=FRESH();S.name=p.name;S.avatar=p.avatar;S.daily.d=today();save();closeModal();hud();home()}
+
+/* ---------- 教材設定 ---------- */
+let CFGG=0;
+const semLabel=sem=>sem==="全"?"全學年":sem+"學期";
+function bookLine(g,s){if(s==="engx")return `<div class="booktag">🎯 題目依${GRADES[g-1].name}程度自動產生，每次都不一樣。先練最弱的，或按上方「弱點加強」。</div>`;
+  const cu=curUnits(g,s),v=verLabel(s,cfgVer(g,s));
+  return `<div class="booktag">${cu.units.length?`📚 ${v}版・${GRADES[g-1].name}${semLabel(cu.sem)}・對應課本單元（${cu.units.length} 個）`:`📘 通用課綱單元（${v}版${GRADES[g-1].name}的單元對照還沒建立）`}　<a onclick="openCfg(${g})">更改</a></div>`}
+function accTag(k){const t=S.tagStat[k];return t&&t.p?`・正確率 ${Math.round(t.r/t.p*100)}%`:""}
+function myBookHTML(){const c=S.cfg;
+  if(!c.g)return `<div class="mission"><span style="font-size:30px">📚</span><div class="t">設定年級和教材版本<small>關卡會對應學校課本的單元，也可以只練特定題型</small></div><button class="btn-pri" onclick="openCfg(0,true)">開始設定</button></div>`;
+  const G=GRADES[c.g-1];
+  return `<div class="mybook rise"><div class="mh"><b>📚 我的課本：${G.name}${semLabel(cfgSem())}</b><small>${c.school==="自訂"?"自選版本":"🏫 臺北市"+c.school}${c.types.length?"・只練 "+c.types.join("、"):""}</small><a onclick="openCfg()">⚙️ 設定</a></div>
+   <div class="mbs">${SUBJ_BY_GRADE(c.g).map(s=>{const X=SUBJECTS[s],st=subjStars(c.g,s),mx=subjMax(c.g,s);return `<button class="mb ${s==="engx"?"hot":""}" style="--sc:${X.color}" onclick="world(${c.g},'${s}')"><span class="e">${X.emo}</span><b>${X.name}</b><small>${s==="engx"?"聽力＋文法":verLabel(s,cfgVer(c.g,s))}</small><i>⭐ ${st}/${mx}</i></button>`}).join("")}</div></div>`}
+function openCfg(g,first){CFGG=g||CFGG||S.cfg.g||S.lastGrade||4;const G=GRADES[CFGG-1],c=S.cfg;const subs=SUBJ_BY_GRADE(CFGG).filter(x=>x!=="engx");
+  modal(`<h2>📚 教材設定・${esc(S.name||"")}</h2>${first?`<p>先選你讀幾年級，關卡就會對應課本單元！</p>`:""}
+  <p><b>我的年級</b></p><div class="chips">${GRADES.map(x=>`<button class="chip ${c.g===x.g?"on":""}" onclick="S.cfg.g=${x.g};CFGG=${x.g};save();openCfg(0,${!!first})">${x.emo} ${x.name}</button>`).join("")}</div>
+  <p><b>學校</b></p><div class="chips">${[["敦化國小","🏫 臺北市敦化國小（自動帶入版本）"],["自訂","✏️ 自己選版本"]].map(([k,n])=>`<button class="chip ${c.school===k?"on":""}" onclick="S.cfg.school='${k}';save();openCfg()">${n}</button>`).join("")}</div>
+  <p><b>學期</b>　<small class="muted">（自動＝現在是${autoSem()}學期）</small></p><div class="chips">${[["","自動"],["上","上學期"],["下","下學期"],["全","全學年"]].map(([k,n])=>`<button class="chip ${c.sem===k?"on":""}" onclick="S.cfg.sem='${k}';save();openCfg()">${n}</button>`).join("")}</div>
+  <p><b>${G.name}各科版本</b>　<small class="muted">看其他年級：${GRADES.map(x=>`<a class="glink ${x.g===CFGG?"on":""}" onclick="CFGG=${x.g};openCfg()">${x.g}</a>`).join(" ")}</small></p>
+  <table class="rep cfgt">${subs.map(s=>{const cur=cfgVer(CFGG,s),sch=schoolVer(CFGG,s);return `<tr><td>${SUBJECTS[s].emo} ${SUBJECTS[s].name}</td><td><select onchange="setVer(${CFGG},'${s}',this.value)">${VERSIONS[s].map(v=>`<option value="${v}" ${v===cur?"selected":""}>${verLabel(s,v)}${v===sch?"（學校）":""}</option>`).join("")}</select></td><td>${curAvail(CFGG,s,cur)?"✅ 對應課本單元":"📘 通用單元"}</td></tr>`}).join("")}</table>
+  <p><b>題型</b>　<small class="muted">（都不選＝全部題型）</small></p><div class="chips">${QTYPES.map(([k,n])=>`<button class="chip ${c.types.includes(k)?"on":""}" onclick="toggleType('${k}')">${n}</button>`).join("")}</div>
+  <p class="muted" style="font-size:12px;margin-top:12px">單元名稱依敦化國小 115 學年度課程計畫與教科書版本一覽表；題目全部是本站自己出的練習題，不是課本或出版社內容。每位小朋友的設定分開儲存。</p>
+  <div class="row"><button class="btn-pri" onclick="closeModal();home()">完成 ✓</button></div>`)}
+function setVer(g,s,v){if(v===schoolVer(g,s))delete S.cfg.ver[`${g}-${s}`];else S.cfg.ver[`${g}-${s}`]=v;save();openCfg()}
+function toggleType(k){const t=S.cfg.types,i=t.indexOf(k);if(i>=0)t.splice(i,1);else t.push(k);save();openCfg()}
+function engReport(){const rows=ENG_CH.map(c=>({c,t:S.tagStat["engx:"+c.k]})).filter(x=>x.t&&x.t.p);
+  if(!rows.length)return `<p style="margin-top:12px"><b>🎧 英語聽力・文法</b>：還沒有特訓營紀錄，建議每天到「英語特訓營」練 1～2 關。</p>`;
+  const sum=f=>{const a=rows.filter(x=>f(x.c.k)),p=a.reduce((n,x)=>n+x.t.p,0),r=a.reduce((n,x)=>n+x.t.r,0);return p?`${Math.round(r/p*100)}%（${p} 題）`:"－"};
+  const weak=rows.filter(x=>x.t.p>=3).sort((a,b)=>a.t.r/a.t.p-b.t.r/b.t.p).slice(0,6);
+  return `<p style="margin-top:12px"><b>🎧 英語特訓營</b>　聽力正確率 <b>${sum(k=>k[0]==="L")}</b>・文法正確率 <b>${sum(k=>k[0]==="G")}</b></p>
+   ${weak.length?`<p class="muted" style="font-size:13px;margin:4px 0">最需要加強（正確率由低到高）：</p><div class="chips">${weak.map(x=>`<span class="chip">${x.c.n} ${Math.round(x.t.r/x.t.p*100)}%</span>`).join("")}</div>`:""}`}
 
 /* ---------- 啟動 ---------- */
 function route(){const m=location.hash.match(/^#g(\d)(?:-(\w+))?$/);if(m&&m[2]&&SUBJECTS[m[2]])world(+m[1],m[2]);else if(m)grade(+m[1]);else home()}

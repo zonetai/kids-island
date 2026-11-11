@@ -27,7 +27,7 @@ const SUBJECTS = {
   social:{emo:"🗺️", name:"社會", world:"寶島旅行團", npc:"🐻", npcName:"台灣黑熊導遊", color:"#f4a261", bg:"linear-gradient(160deg,#fff4e0,#ffe3b8)",
     story:["嘿！我是台灣黑熊導遊，寶島旅行團出發囉！","我們要走遍台灣的山海、認識歷史和節慶，還要學會當個好公民。","每到一站，蓋一個紀念章。背好背包，走吧！"]},
 };
-const SUBJ_BY_GRADE = g => g<=2 ? ["chinese","math","english","life"] : ["chinese","math","english","science","social"];
+const SUBJ_BY_GRADE = g => g<=2 ? ["chinese","math","english","life","engx"] : ["chinese","math","english","science","social","engx"];
 
 /* 單元攻略本（重點整理） */
 const NOTES = {
